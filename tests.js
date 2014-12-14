@@ -1,6 +1,7 @@
+//THIS FILE IS VERY ALPHA AND IS MOSTLY USED FOR DEV PURPOSES
 //run "nearleyc larkConverter.ne>larkConverter.js" first
 var grammar = require("./util_grammar.js");
-var lark = require("./lark.js");
+var lark = require("./interperter.js");
 var nearley = require("nearley");
 var fs = require("fs");
 
@@ -12,8 +13,7 @@ var lines=fs.readFileSync("test_case.lark",details).split("\n");
 rules=[];
 for(i in lines){
   if(lines[i]){
-    js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
-    rules.push(eval(js_parser.feed(lines[i]).results[0])(lark));
+    rules.push( lark.parser_from_str(lines[i]));
   }
 }
 function rule_parser(quoted_str){
@@ -28,30 +28,13 @@ function rule_parser(quoted_str){
   if(rule_parsings.length==0){
     return {matches:false};
   }else{
-    return {matches:true,captured_vars:{rule:eval(rule_parsings[0])(lark)}};
+    return {matches:true,captured_vars:{rule:rule_parsings[0](lark)}};
   }
 }
-rules.push(lark.parser_from_func(
-          function(str_to_parse){
-            var basic_attempt=lark.concat_rules([lark.lit("(with "),lark.named_rule("rule",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/)),lark.lit(" "),lark.named_rule("expr",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/)),lark.lit(")")])(str_to_parse);
-            if(!basic_attempt.matches){
-              return undefined;
-            }
-            var str_form_of_rule=eval(basic_attempt.captured_vars.rule);//yeah.... this is dangerous.... I'm 'unescaping' the string into rule form.
-            //Now I turn it into a rule
-            js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
-            rule_parsings=js_parser.feed(str_form_of_rule).results;
-            if(rule_parsings.length==0)return undefined;
-            var str_form_of_expr=eval(basic_attempt.captured_vars.expr);
-            var attempt=lark.exec_lark("out",rules.concat([eval(rule_parsings[0])(lark)]))(str_form_of_expr);
-            if(attempt.matches){
-              return attempt.captured_vars.out;
-            }else{
-              return undefined;
-                //ummm... post proccessing fail?
-            }
-          }));
 
+rules.push(lark.parse_with_rule(lark.concat_rules([lark.lit("(with "),lark.named_rule("rule",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/),function(i){return eval(i);}),lark.lit(" "),lark.named_rule("expr",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/),function(i){return eval(i);}),lark.lit(")")])
+      //    )// (this is here because of annoying atom syntax highlighting)
+    ));
 
 //ADD WITH FUNCTION
 // rules.push({match:concat_rules(lit('(with '),

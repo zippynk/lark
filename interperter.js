@@ -31,7 +31,6 @@ function lit(match_against){
   }
 
 }
-
 //The join_rules function takes two rule functions and returns a function that attempts to parse an input string with one rule followed by the other. It does this by splliting the string in half at every index and checking whether each rule can parse its half of the string.
 function join_rules(left_rule,right_rule){
   //This is memoized so we don't do useless stuff later.
@@ -148,19 +147,55 @@ function parser_from_func(func_to_use){
     },postprocessor:function(captured_vars){return captured_vars.out;}
   };
 }
+//This takes a rule that captures a rule variable and a expr variable and returns a rule that will parse the expr with the rule (and all other rules).
+var nearley = require("nearley");
+var grammar = require("./util_grammar.js");
+function parse_with_rule(rule){
+  return parser_from_func(
+    function(str_to_parse){
+      // var basic_attempt=lark.concat_rules([lark.lit("(with "),lark.named_rule("rule",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/)),lark.lit(" "),lark.named_rule("expr",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/)),lark.lit(")")])(str_to_parse);
+      var given_rule_attempt=rule(str_to_parse)
+      if(!given_rule_attempt.matches){
+        return undefined;
+      }
+      var str_form_of_rule=given_rule_attempt.captured_vars.rule;//yeah.... this is dangerous.... I'm 'unescaping' the string into rule form.
+      //Now I turn it into a rule
+      js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
+      rule_parsings=js_parser.feed(str_form_of_rule).results;
+      if(rule_parsings.length==0)return undefined;
+      var str_form_of_expr=given_rule_attempt.captured_vars.expr;
+      //module
+      var attempt=exec_lark("out",global_parsers.concat([rule_parsings[0](lark_functions)]))(str_form_of_expr);
+      if(attempt.matches){
+        return attempt.captured_vars.out;
+      }else{
+        return undefined;
+        //ummm... post proccessing fail?
+      }
+    });
+}
+function parser_from_str(str_to_convert){
+  js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
+  //needs to be valid...
+  //console.log((js_parser.feed(str_to_convert).results[0])(module.exports));
+  return(js_parser.feed(str_to_convert).results[0])(lark_functions);
+}
 //ADD THIS NAMED FUNCTION SO I CAN NAME RULES
 
 //in actuall fact the parsers should compile their work into rules, wilds should come with rules builtin, no matter what...
-//but that is for later I guess
+//MUST BE A MODULE
+var lark_functions = {lit:lit,
+  join_rules:join_rules,
+  concat_rules:concat_rules,
+  parse_expr:parse_expr,
+  exec_lark:exec_lark,
+  named_rule:named_rule,
+  parser_from_func: parser_from_func,
+  parse_with_rule: parse_with_rule,
+  parser_from_str: parser_from_str
+};
 if (typeof module !== 'undefined'&& typeof module.exports !== 'undefined') {
-  module.exports = {lit:lit,
-    join_rules:join_rules,
-    concat_rules:concat_rules,
-    parse_expr:parse_expr,
-    exec_lark:exec_lark,
-    named_rule:named_rule,
-    parser_from_func: parser_from_func
-  };
+  module.exports = lark_functions;
 }
 // else {
 //   window.grammar = grammar;

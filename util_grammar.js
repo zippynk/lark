@@ -4,7 +4,7 @@
 function id(x) {return x[0]; }
 var grammar = {
     ParserRules: [
-    {"name": "rule", "symbols": ["left", {"literal":"="}, "right"], "postprocess":  function(d){return "(function(lark){return {match:"+d[0]+",postproccessor:"+d[2]+"};})";} },
+    {"name": "rule", "symbols": ["left", {"literal":"="}, "right"], "postprocess":  function(d){return eval("(function(lark){return {match:"+d[0]+",postprocessor:"+d[2]+"};})");} },
     {"name": "left", "symbols": [" ebnf$1"], "postprocess":  function(d){return "lark.concat_rules(["+d[0].join(",")+",])";} },
     {"name": "wildL", "symbols": [{"literal":"$"}, " ebnf$2"], "postprocess":  function(d){return "lark.exec_lark('"+d[1]+"')";} },
     {"name": "charL", "symbols": [/[^$=\\\n']/], "postprocess":  function(d){return "lark.lit('"+d[0]+"')";} },
