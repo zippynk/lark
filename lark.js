@@ -47,7 +47,7 @@ function join_rules(left_rule,right_rule){
         //Here we check the right half of the string starting at i.
         right_attempt=right_rule(str_to_check.slice(i));
         if(right_attempt.matches){
-          //Now we know that both sides match so we just return that we match and the symbols. Note for "than" we are combining the captured_vars from both sections as they are not being absorbed here. They are in fact absorbed in the postproccessor.
+          //Now we know that both sides match so we just return that we match and the symbols. Note for "than" we are combining the captured_vars from both sections as they are not being absorbed here. They are in fact absorbed in the postprocessor.
           return {captured_vars:_.extend({},left_attempt.captured_vars,right_attempt.captured_vars),matches:true}
         }
       }
@@ -81,10 +81,10 @@ function parse_expr(var_name,parsers){
       //This is getting the current parser and trying to match str_to_parse with that rule.
       current_parser=parsers[i]
       attempt=current_parser.match(str_to_parse);
-      //If the attempt does match we run the captured_vars of that attempt through the rules postproccessor.
+      //If the attempt does match we run the captured_vars of that attempt through the rules postprocessor.
       if(attempt.matches){
         var my_captured_vars={}
-        my_captured_vars[var_name]=current_parser.postproccessor(attempt.captured_vars);
+        my_captured_vars[var_name]=current_parser.postprocessor(attempt.captured_vars);
         return {captured_vars:my_captured_vars,matches:true};
       }
 
@@ -121,13 +121,13 @@ function exec_lark(var_name,parsers){
   }
 }
 
-function named_rule(name,rule,postproccessor){
+function named_rule(name,rule,postprocessor){
   return function(str_to_check){
     var attempt=rule(str_to_check);
     if(attempt.matches){
       var ret={matches:true,captured_vars:{}};
-      if(postproccessor){
-        ret.captured_vars[name]=postproccessor(str_to_check);
+      if(postprocessor){
+        ret.captured_vars[name]=postprocessor(str_to_check);
       }else{
         ret.captured_vars[name]=str_to_check;
       }
@@ -136,7 +136,7 @@ function named_rule(name,rule,postproccessor){
     return {matches:false};
   }
 }
-//This is for when you have a function that you want to use for both matching and postproccessing
+//This is for when you have a function that you want to use for both matching and postprocessing
 function parser_from_func(func_to_use){
   //this is going to return an object.... the object needs to have storing things...aka class
   return {match:function(str_to_check){
@@ -145,7 +145,7 @@ function parser_from_func(func_to_use){
         return {matches:true,captured_vars:{out:attempt}};
       }
       return {matches:false};
-    },postproccessor:function(captured_vars){return captured_vars.out;}
+    },postprocessor:function(captured_vars){return captured_vars.out;}
   };
 }
 //ADD THIS NAMED FUNCTION SO I CAN NAME RULES
