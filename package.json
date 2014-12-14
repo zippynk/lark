@@ -1,0 +1,19 @@
+{
+  "name": "lark",
+  "version": "0.0.0",
+  "description": "A programming language with mutable syntax.",
+  "main": "lark.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JacobEdelman/lark.git"
+  },
+  "author": "Jacob Edelman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JacobEdelman/lark/issues"
+  },
+  "homepage": "https://github.com/JacobEdelman/lark"
+}
