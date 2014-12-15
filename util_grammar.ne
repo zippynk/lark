@@ -1,5 +1,5 @@
-rule -> left "=" right {% function(d){return eval("(function(lark){return {match:"+d[0]+",postprocessor:"+d[2]+"};})");} %}
-left -> (charL | wildL):* {% function(d){return "lark.concat_rules(["+d[0].join(",")+",])";} %}
+parser -> left "=" right {% function(d){return eval("(function(lark){return {parse:"+d[0]+",postprocessor:"+d[2]+"};})");} %}
+left -> (charL | wildL):* {% function(d){return "lark.concat_parsers(["+d[0].join(",")+",])";} %}
 wildL -> "$" [a-zA-Z]:+ {% function(d){return "lark.exec_lark('"+d[1]+"')";} %}
 charL -> [^$=\\\n'] {% function(d){return "lark.lit('"+d[0]+"')";} %}
       | "\\$" {% function(d){return "lark.lit('"+"$"+"')";} %}
