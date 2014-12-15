@@ -174,15 +174,14 @@ function parse_with_rule(rule){
       }
     });
 }
+//This takes the string form of a rule, such as $n!=($n-1)! and turns it into a parser object.
 function parser_from_str(str_to_convert){
+  //Is their anyway I can make it so I don't have to make a new js_parser each time?
   js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
-  //needs to be valid...
-  //console.log((js_parser.feed(str_to_convert).results[0])(module.exports));
+  //This will error is the input is not a valid rule.
   return(js_parser.feed(str_to_convert).results[0])(lark_functions);
 }
-//ADD THIS NAMED FUNCTION SO I CAN NAME RULES
 
-//in actuall fact the parsers should compile their work into rules, wilds should come with rules builtin, no matter what...
 //MUST BE A MODULE
 var lark_functions = {lit:lit,
   join_rules:join_rules,
