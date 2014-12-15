@@ -4,6 +4,7 @@
   "description": "A programming language with mutable syntax.",
   "main": "lang_base.js",
   "scripts": {
+    "postinstall":"nearleyc larkConverter.ne>larkConverter.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
