@@ -1,17 +1,14 @@
 (function() {
-  //The module underscore is imported in order to help with functional stuff like memoization.
-  _ = require('underscore');
-
-  /*
-  The lit function takes a string or matchable object and returns a function
+  var _ = require('underscore');
+  var nearley = require('nearley');
+  var grammar = require('./util_grammar.js');
+  /* The lit function takes a string or matchable object and returns a function
   that checks for a complete matche of the whole string of its input with the
-  string or matchable object.
-  */
+  string or matchable object. */
   function lit(match_against) {
-    /*No memoization here because I think this is fast enough without it. A
+    /* No memoization here because I think this is fast enough without it. A
     possible change in the future may be adding memoization here or making it
-    occur when the matchable is sufficiently large.
-    */
+    occur when the matchable is sufficiently large. */
     if (typeof match_against == 'string') {
       return function(x) {
         if (x === match_against) {
@@ -26,7 +23,7 @@
         }
       };
     } else {
-      //This assumes it is a regex or other matchable object.
+      // This assumes it is a regex or other matchable object.
       return function(x) {
 
         var attempt_match = x.match(match_against);
@@ -35,7 +32,7 @@
             matches: false
           };
         }
-        //This is to make sure all of x is matched.
+        // This is to make sure all of x is matched.
         else if (attempt_match[0] === x) {
           return {
             captured_vars: {},
@@ -57,7 +54,7 @@
   whether each parser can parse its half of the string.
   */
   function join_parsers(left_parser, right_parser) {
-    //This is memoized so we don't do useless stuff later.
+    // This is memoized so we don't do useless stuff later.
     return _.memoize(function(str_to_check) {
       /* The attempt variables store our attempts at parsing each half of our
       string which we will split at differing points. */
@@ -67,75 +64,93 @@
       function to its own left_parser or right_parser or something similar with
       more levels. */
       for (var i in str_to_check) {
-        //Here we check the left half of the string before i.
+        // Here we check the left half of the string before i.
         left_attempt = left_parser(str_to_check.slice(0, i));
         if (left_attempt.matches) {
-          //Here we check the right half of the string starting at i.
+          // Here we check the right half of the string starting at i.
           right_attempt = right_parser(str_to_check.slice(i));
           if (right_attempt.matches) {
-            //Now we know that both sides match so we just return that we match and the symbols. Note for "than" we are combining the captured_vars from both sections as they are not being absorbed here. They are in fact absorbed in the postprocessor.
+            /* Now we know that both sides match so we just return that we match
+            and the symbols. Note for "than" we are combining the captured_vars
+            from both sections as they are not being absorbed here. They are in
+            fact absorbed in the postprocessor. */
+            var left_captured = left_attempt.captured_vars;
+            var right_captured = right_attempt.captured_vars;
             return {
-              captured_vars: _.extend({}, left_attempt.captured_vars, right_attempt.captured_vars),
+              captured_vars: _.extend({}, right_captured, left_captured),
               matches: true
             };
           }
         }
       }
-      //In case there are no matchings.
+      // In case there are no matchings.
       return {
         matches: false
       };
     });
   }
 
-  //The concat_parsers function takes an array of several parsers as input and makes a concatanation of them using the join_parsers function.
+  /* The concat_parsers function takes an array of several parsers as input and
+  makes a concatanation of them using the join_parsers function. */
   function concat_parsers(parsers) {
-    //This accounts for trying to concat one item which may occur due to concat_parsers's recursion.
+    /* This accounts for trying to concat one item which may occur due to
+    concat_parsers's recursion. */
     if (parsers.length == 1) {
       return parsers[0];
     }
-    //Now we split them in half and recurse on each half, combining those two halfs with join_parsers.
-    return join_parsers(concat_parsers(parsers.slice(0, parsers.length / 2)), concat_parsers(parsers.slice(parsers.length / 2)));
+    /* Now we split them in half and recurse on each half, combining those two
+    halves with join_parsers. */
+    var left_half = concat_parsers(parsers.slice(0, parsers.length / 2));
+    var right_half = concat_parsers(parsers.slice(parsers.length / 2));
+    return join_parsers(left_half, right_half);
   }
 
-  //This or_rules function takes a set of rules and a name and returns a function that takes a string and returns {matches:false} if none of the rules match the input string and otherwise returns an object where matching is true and a captured_vars where var_name maps to the output of the captured parsing.
-  //so, I guess this is fine... but this won't have a post proccessor???
-  //this has no postproccessor
+  /* This or_rules function takes a set of rules and a name and returns a
+  function that takes a string and returns {matches:false} if none of the rules
+  match the input string and otherwise returns an object where matching is true
+  and a captured_vars where var_name maps to the output of the captured parsing.
+  */
   function or_rules(var_name, rules) {
 
-    //This is memoized so we don't do useless stuff later.
+    // This is memoized so we don't do useless stuff later.
     return _.memoize(function(str_to_parse) {
 
-      //The rule variable stores the current rule we are looking at in the for loop below.
-      var current_rule;
-      //The attempt variable store our attempts at parsing the string with the function at the variable rule.
+      /* The rule variable stores the current rule we are looking at in the for
+      loop below. */
+      var rule;
+      /* The attempt variable store our attempts at parsing the string with the
+      function at the variable rule. */
       var attempt;
       for (var i in rules) {
-        //This is getting the current rule and trying to match str_to_parse with that rule.
-        current_rule = rules[i];
-        attempt = current_rule.parse(str_to_parse);
-        //If the attempt does match we run the captured_vars of that attempt through the rules postprocessor.
+        /* This is getting the current rule and trying to match str_to_parse
+        with that rule. */
+        rule = rules[i];
+        attempt = rule.parse(str_to_parse);
+        /* If the attempt does match we run the captured_vars of that attempt
+        through the rules postprocessor. */
         if (attempt.matches) {
-          var my_captured_vars = {};
-          //so.... post proccessor.... should be optional???.... fine, I guess
-          my_captured_vars[var_name] = current_rule.postprocessor(attempt.captured_vars);
-          //so, postproccessor..... takes the vars and does things to them.... the post proccessor bit needs  to come from somewhere else....
+          var captured_vars = {};
+          // More than 80 characters here which is annoying
+          captured_vars[var_name] = rule.postprocessor(attempt.captured_vars);
           return {
-            captured_vars: my_captured_vars,
+            captured_vars: captured_vars,
             matches: true
           };
         }
 
       }
-      //If the program gets here it means no parsings have been found so it just returns {matches:false}.
+      /* If the program gets here it means no parsings have been found so it
+      just returns {matches:false}. */
       return {
         matches: false
       };
     });
   }
 
-  //The global_rules variable is used to keep track of the base set of rules since they are needed with several functions
-  //It may change at times if inside certain functions the rules are changed. This should eventually be changed as it can cause problems.
+  /* The global_rules variable is used to keep track of the base set of rules
+  since they are needed with several functions. It may change at times if inside
+  certain functions the rules are changed. This should eventually be changed as
+  it can cause problems. */
   var global_rules;
 
   function exec_lark(var_name, rules) {
@@ -143,13 +158,15 @@
 
       var older_rules;
       if (rules) {
-        //The older_rules variable holdes the previous global rules until this is done executing.
+        /* The older_rules variable holds the previous global rules until this
+        is done executing. */
         older_rules = global_rules;
         global_rules = rules;
 
       }
       var attempt = or_rules(var_name, global_rules)(str_to_exec);
-      //If the string never parses than we return {matches:false}. Otherwise we return the last possible matching parse.
+      /* If the string never parses than we return {matches:false}. Otherwise we
+      return the last possible matching parse. */
       var old = {
         matches: false
       };
@@ -158,7 +175,7 @@
         attempt = or_rules(var_name, global_rules)(attempt[var_name]);
       }
       if (older_rules) {
-        //The global_rules variable now gets back its old value
+        // The global_rules variable now gets back its old value
         global_rules = older_rules;
       }
       return old;
@@ -190,43 +207,46 @@
     };
   }
 
+  function new_rule_parser(start) {
+    return new nearley.Parser(grammar.ParserRules, grammar.ParserStart, start);
+  }
 
-  //This takes a parser that captures a parser variable and a expr variable and returns a parser that will parse the expr with the parser (and all other parsers).
-  var nearley = require('nearley');
-  var grammar = require('./util_grammar.js');
+  /* This takes a parser that captures a parser variable and a expr variable and
+  returns a parser that will parse the expr with the parser (and all other
+  parsers). */
 
   function with_parser(parser) {
     return rule_from_func(
         function(str_to_parse) {
-          // var basic_attempt=lark.concat_parsers([lark.lit("(with "),lark.named_parser("parser",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/)),lark.lit(" "),lark.named_parser("expr",lark.lit(/\"([^"\/]|\\\\|\\[^\\])*\"/)),lark.lit(")")])(str_to_parse);
           var given_parser_attempt = parser(str_to_parse);
           if (!given_parser_attempt.matches) {
             return undefined;
           }
-          var str_form_of_parser = given_parser_attempt.captured_vars.parser; //yeah.... this is dangerous.... I'm 'unescaping' the string into parser form.
-          //Now I turn it into a parser
-          js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart, 'parser');
-          rule_parsings = js_parser.feed(str_form_of_parser).results;
+          var str_form_of_parser = given_parser_attempt.captured_vars.parser;
+          // Now I turn it into a parser
+          var rule_parser = new_rule_parser('parser');
+          rule_parsings = rule_parser.feed(str_form_of_parser).results;
           if (rule_parsings.length == 0) return undefined;
           var str_form_of_expr = given_parser_attempt.captured_vars.expr;
-          //module
-          var attempt = exec_lark('out', global_rules.concat([rule_parsings[0](lark_functions)]))(str_form_of_expr);
+          var new_rule = rule_parsings[0](lark_functions);
+          var temp_rules = global_rules.concat([new_rule]);
+          var attempt = exec_lark('out', temp_rules)(str_form_of_expr);
           if (attempt.matches) {
             return attempt.captured_vars.out;
           } else {
             return undefined;
-            //ummm... post proccessing fail?
+            // This means there was a post proccessing failure.
           }
         });
   }
 
-  //This is for when you have a function that you want to use for both matching and postprocessing
+  /* This is for when you have a function that you want to use for both
+    matching and postprocessing */
   function rule_from_func(func_to_use) {
-    //this is going to return an object.... the object needs to have storing things...aka class
     return {
       parse: function(str_to_check) {
         var attempt = func_to_use(str_to_check);
-        if (attempt != undefined) { //undefined is for when it fails
+        if (attempt != undefined) { // undefined is for when it fails
           return {
             matches: true,
             captured_vars: {
@@ -244,15 +264,17 @@
     };
   }
 
-  //This takes the string form of a parser, such as $n!=($n-1)! and turns it into a parser object.
+  /* This takes the string form of a parser, such as $n!=($n-1)! and turns it
+    into a parser object. */
   function rule_from_str(str_to_convert) {
-    //Is their anyway I can make it so I don't have to make a new js_parser each time?
+    /* Is their anyway I can make it so I don't have to make a new js_parser
+      each time? */
     js_parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
-    //This will error is the input is not a valid parser.
+    // This will error is the input is not a valid parser.
     return (js_parser.feed(str_to_convert).results[0])(lark_functions);
   }
 
-  //MUST BE A MODULE
+  // MUST BE A MODULE
   var lark_functions = {
     lit: lit,
     join_parsers: join_parsers,
@@ -264,10 +286,13 @@
     with_parser: with_parser,
     rule_from_str: rule_from_str
   };
-  if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+  //!== not needed
+  if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
     module.exports = lark_functions;
   }
-  // else {
-  //   window.grammar = grammar;
-  // }
+  /*
+    else {
+    window.grammar = grammar;
+  }
+  */
 })();
