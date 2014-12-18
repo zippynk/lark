@@ -111,7 +111,7 @@
   /* This is for when you have a parser and want to make it so it captures
   what it parses with a specific name and optionally a postprocessor. */
   //this allows one to take
-  function named_parser(name, rule,postprocessor) {
+  function named_parser(name, rule, postprocessor) {
     return function(str_to_check) {
       var attempt = rule(str_to_check);
       if (attempt.matches) {
@@ -137,23 +137,23 @@
   function func_to_parser(name, func) {
     return function(str_to_check) {
       var attempt = func(str_to_check);
-      if (attempt === null){
+      if (attempt === null) {
         return {
-          matches:false
-          };
+          matches: false
+        };
       } else {
         var ret = {
           matches: true,
           captured_vars: {}
         };
         ret.captured_vars[name] = attempt;
-        return ret
+        return ret;
       }
     }
   }
   /* For making functions into rules. */
   function func_to_rule(func) {
-    return func_to_parser("output",func)
+    return func_to_parser('output', func);
   }
 
   /* This or_rules function takes a set of rules and a name and returns a
@@ -215,7 +215,7 @@
       return the last possible matching parse. */
 
       var old = {
-        matches: false,
+        matches: false
       };
       while (attempt.matches) {
         // The if statement checks to see if we are just looping.
@@ -230,18 +230,15 @@
     }
   }
 
-
-
-
-  function parts_to_rule(matcher,postprocessor) {
+  function parts_to_rule(matcher, postprocessor) {
     return function(str_to_check) {
       var attempt = matcher(str_to_check);
       if (attempt.matches) {
-        return {matches : true,
-                captured_vars : {
-                  output:postprocessor(attempt.captured_vars)
-                  }
-                };
+        return {matches: true,
+          captured_vars: {
+            output: postprocessor(attempt.captured_vars)
+          }
+        };
       }
       return {
         matches: false
@@ -259,7 +256,7 @@
     named_parser: named_parser,
     func_to_parser: func_to_parser,
     func_to_rule: func_to_rule,
-    parts_to_rule:parts_to_rule
+    parts_to_rule: parts_to_rule
   };
   //!== not needed
   if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
