@@ -232,46 +232,6 @@
 
 
 
-  function new_rule_parser(start) {
-    nearley.Parser.prototype.lark=lark_functions;
-    // Does this 3rd argument of start work?
-    return new nearley.Parser(grammar.ParserRules, grammar.ParserStart, start);
-  }
-
-  /* This takes a parser that captures a parser variable and a expr variable and
-  returns a parser that will parse the expr with the parser (and all other
-  parsers). */
-
-  function with_parser(parser) {
-        return function(str_to_parse) {
-          var given_parser_attempt = parser(str_to_parse);
-          if (!given_parser_attempt.matches) {
-            return {matches:false};
-          }
-          var str_form_of_parser = given_parser_attempt.captured_vars.parser;
-          // Now I turn it into a parser
-          var rule_parser = new_rule_parser('rule');
-          rule_parsings = rule_parser.feed(str_form_of_parser).results;
-          if (rule_parsings.length == 0) return null;
-          var str_form_of_expr = given_parser_attempt.captured_vars.expr;
-          var new_rule = rule_parsings[0](lark_functions);
-          var temp_rules = global_rules.concat([new_rule]);
-
-          var attempt = expr_parser('output', temp_rules)(str_form_of_expr);
-          return attempt;
-        }
-  }
-
-
-  /* This takes the string form of a parser, such as $n!=($n-1)! and turns it
-    into a parser object. */
-  function str_to_rule(str_to_convert) {
-    /* Is their anyway I can make it so I don't have to make a new js_parser
-      each time? */
-      var rule_parser = new_rule_parser('rule');
-    // This will error is the input is not a valid parser.
-    return (rule_parser.feed(str_to_convert).results[0])(lark_functions);
-  }
 
   function parts_to_rule(matcher,postprocessor) {
     return function(str_to_check) {
@@ -299,8 +259,6 @@
     named_parser: named_parser,
     func_to_parser: func_to_parser,
     func_to_rule: func_to_rule,
-    with_parser: with_parser,
-    str_to_rule: str_to_rule,
     parts_to_rule:parts_to_rule
   };
   //!== not needed

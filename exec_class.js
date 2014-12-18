@@ -22,7 +22,7 @@
       each time? */
       var rule_parser = new_rule_parser('rule');
       // This will error is the input is not a valid parser.
-      return (rule_parser.feed(str_to_convert).results[0])(core_parser,this);
+      return (rule_parser.feed(str_to_convert).results[0])(this);
     }
 
     this.to_parser = function(name) {
