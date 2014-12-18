@@ -1,12 +1,6 @@
 (function() {
   /* You may be wondering what the difference between a rule and a parser is.
-  A parser takes some input and returns an object indicating whether it matched
-  the input and possibly including some variables it captured (specific parts
-  that it matched that may of may not have been postprocessed). A rule has a
-  parser property that is a parser and a postprocessor property that takes the
-  captured variables of the parser and returns a string. The use for this is
-  that we can check for correct parsings and only execute the postprocessor part
-  later. */
+  As of now the rules just always capture a "output" variable. */
 
   var _ = require('underscore');
   var nearley = require('nearley');
@@ -116,8 +110,8 @@
 
   /* This is for when you have a parser and want to make it so it captures
   what it parses with a specific name and optionally a postprocessor. */
-
-  function named_parser(name, rule, postprocessor) {
+  //this allows one to take
+  function named_parser(name, rule,postprocessor) {
     return function(str_to_check) {
       var attempt = rule(str_to_check);
       if (attempt.matches) {
@@ -143,7 +137,7 @@
   function func_to_parser(name, func) {
     return function(str_to_check) {
       var attempt = func(str_to_check);
-      if (attempt === undefined){
+      if (attempt === null){
         return {
           matches:false
           };
@@ -157,6 +151,10 @@
       }
     }
   }
+  /* For making functions into rules. */
+  function func_to_rule(func) {
+    return func_to_parser("output",func)
+  }
 
   /* This or_rules function takes a set of rules and a name and returns a
   function that takes a string and returns {matches:false} if none of the rules
@@ -164,7 +162,6 @@
   and a captured_vars where var_name maps to the output of the captured parsing.
   */
   function or_rules(var_name, rules) {
-
     // This is memoized so we don't do useless stuff later.
     return _.memoize(function(str_to_parse) {
 
@@ -175,16 +172,17 @@
       function at the variable rule. */
       var attempt;
       for (var i in rules) {
+
         /* This is getting the current rule and trying to match str_to_parse
         with that rule. */
         rule = rules[i];
-        attempt = rule.parse(str_to_parse);
+        attempt = rule(str_to_parse);
         /* If the attempt does match we run the captured_vars of that attempt
         through the rules postprocessor. */
         if (attempt.matches) {
           var captured_vars = {};
           // More than 80 characters here which is annoying
-          captured_vars[var_name] = rule.postprocessor(attempt.captured_vars);
+          captured_vars[var_name] = attempt.captured_vars.output;//output of a rule
           return {
             captured_vars: captured_vars,
             matches: true
@@ -209,46 +207,32 @@
   /* This will return a parser that executes a string (an expression) with the
   given rules and captures that output with var_name. */
 
-  function expr_parser(var_name, rules) {
+  function expr_parser(var_name, global_rules) {
     return function(str_to_exec) {
 
-      var older_rules;
-      if (rules) {
-        /* The older_rules variable holds the previous global rules until this
-        is done executing. */
-        older_rules = global_rules;
-        global_rules = rules;
-
-      }
       var attempt = or_rules(var_name, global_rules)(str_to_exec);
       /* If the string never parses than we return {matches:false}. Otherwise we
       return the last possible matching parse. */
+
       var old = {
-        matches: false
+        matches: false,
       };
       while (attempt.matches) {
+        // The if statement checks to see if we are just looping.
+        // Should this be here?
+        if (old.matches && attempt.captured_vars.output === old.captured_vars.output) break;
         old = attempt;
-        attempt = or_rules(var_name, global_rules)(attempt[var_name]);
+        attempt = or_rules(var_name, global_rules)(attempt.captured_vars.output);
+
       }
-      if (older_rules) {
-        // The global_rules variable now gets back its old value
-        global_rules = older_rules;
-      }
+
       return old;
     }
   }
 
 
 
-  function make_rule(parser, postprocessor) {
-    return {
-      parser: parser,
-      postprocessor: postprocessor
-    };
-  }
-
   function new_rule_parser(start) {
-    console.log(lark_functions);
     nearley.Parser.prototype.lark=lark_functions;
     // Does this 3rd argument of start work?
     return new nearley.Parser(grammar.ParserRules, grammar.ParserStart, start);
@@ -259,53 +243,25 @@
   parsers). */
 
   function with_parser(parser) {
-    return func_to_rule(
-        function(str_to_parse) {
+        return function(str_to_parse) {
           var given_parser_attempt = parser(str_to_parse);
           if (!given_parser_attempt.matches) {
-            return undefined;
+            return {matches:false};
           }
           var str_form_of_parser = given_parser_attempt.captured_vars.parser;
           // Now I turn it into a parser
           var rule_parser = new_rule_parser('rule');
           rule_parsings = rule_parser.feed(str_form_of_parser).results;
-          if (rule_parsings.length == 0) return undefined;
+          if (rule_parsings.length == 0) return null;
           var str_form_of_expr = given_parser_attempt.captured_vars.expr;
           var new_rule = rule_parsings[0](lark_functions);
           var temp_rules = global_rules.concat([new_rule]);
-          var attempt = expr_parser('out', temp_rules)(str_form_of_expr);
-          if (attempt.matches) {
-            return attempt.captured_vars.out;
-          } else {
-            return undefined;
-            // This means there was a post proccessing failure.
-          }
-        });
+
+          var attempt = expr_parser('output', temp_rules)(str_form_of_expr);
+          return attempt;
+        }
   }
 
-  /* This is for when you have a function that you want to use for both
-    matching and postprocessing */
-  function func_to_rule(func_to_use) {
-    return {
-      parse: function(str_to_check) {
-        var attempt = func_to_use(str_to_check);
-        if (attempt != undefined) { // undefined is for when it fails
-          return {
-            matches: true,
-            captured_vars: {
-              out: attempt
-            }
-          };
-        }
-        return {
-          matches: false
-        };
-      },
-      postprocessor: function(captured_vars) {
-        return captured_vars.out;
-      }
-    };
-  }
 
   /* This takes the string form of a parser, such as $n!=($n-1)! and turns it
     into a parser object. */
@@ -315,6 +271,22 @@
       var rule_parser = new_rule_parser('rule');
     // This will error is the input is not a valid parser.
     return (rule_parser.feed(str_to_convert).results[0])(lark_functions);
+  }
+
+  function parts_to_rule(matcher,postprocessor) {
+    return function(str_to_check) {
+      var attempt = matcher(str_to_check);
+      if (attempt.matches) {
+        return {matches : true,
+                captured_vars : {
+                  output:postprocessor(attempt.captured_vars)
+                  }
+                };
+      }
+      return {
+        matches: false
+      };
+    }
   }
 
   // MUST BE A MODULE
@@ -328,7 +300,8 @@
     func_to_parser: func_to_parser,
     func_to_rule: func_to_rule,
     with_parser: with_parser,
-    str_to_rule: str_to_rule
+    str_to_rule: str_to_rule,
+    parts_to_rule:parts_to_rule
   };
   //!== not needed
   if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
