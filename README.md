@@ -16,8 +16,8 @@ Lark is in very heavy development. This readme will be updated once Lark is even
 The end goal, the vision, of lark is to create a world where lark is the only accepted programming language and is mandatory teaching in all schools.
 
 
-## Contributers
-Jacob Edelman is the leader and creator of Lark. Pull requests are welcomed.
+## Contributors
+Jacob Edelman is the leader and creator of Lark. Pull requests are welcome.
 
 ## Praise?
 
