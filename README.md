@@ -17,8 +17,8 @@ Lark is in very heavy development. This readme will be updated once Lark is even
 The end goal, the vision, of lark is to create a world where lark is the only accepted programming language and is mandatory teaching in all schools.
 
 
-## Contributers
-Jacob Edelman is the leader and creator of Lark. Pull requests are welcomed.
+## Contributors
+Jacob Edelman is the leader and creator of Lark. Pull requests are welcome.
 
 ## Praise?
 
@@ -27,3 +27,9 @@ Jacob Edelman is the leader and creator of Lark. Pull requests are welcomed.
 - _"We need to force-feed JacobEdelman some JSLint."_ - Anonymous on the horrible JS style in an earlier version of Lark.
 
 -  _"As far as I'm concerned, self-mutate is synonymous with self-mutilate in terms of a programming language's capabilities."_ - Aaron Weiss on Lark's mutable syntax.
+
+## History:
+
+- Version 0.0.0: Pre-Usable, mostly a rough draft of core code.
+- Version 0.0.1 (current): Core code for certain sections is done.
+- Version 0.0.2 (in progress): Core code is finished. It should be possible to write programs.

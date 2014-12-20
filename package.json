@@ -1,6 +1,6 @@
 {
   "name": "lark",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A programming language with mutable syntax.",
   "main": "lang_base.js",
   "scripts": {
