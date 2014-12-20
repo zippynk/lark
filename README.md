@@ -1,4 +1,5 @@
 # Lark
+0.0.2
 A programming language with mutable syntax.
 ______
 ## Status

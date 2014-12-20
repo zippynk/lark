@@ -132,25 +132,8 @@
     }
   }
 
-  /* This is for when you have a function and want to turn it into a parser. */
 
-  function func_to_parser(name, func) {
-    return function(str_to_check) {
-      var attempt = func(str_to_check);
-      if (attempt === null) {
-        return {
-          matches: false
-        };
-      } else {
-        var ret = {
-          matches: true,
-          captured_vars: {}
-        };
-        ret.captured_vars[name] = attempt;
-        return ret;
-      }
-    }
-  }
+
   /* For making functions into rules. */
   function func_to_rule(func) {
     return func_to_parser('output', func);
@@ -254,7 +237,6 @@
     or_rules: or_rules,
     expr_parser: expr_parser,
     named_parser: named_parser,
-    func_to_parser: func_to_parser,
     func_to_rule: func_to_rule,
     parts_to_rule: parts_to_rule
   };
