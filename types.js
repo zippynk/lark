@@ -11,16 +11,6 @@
       var named_parser = core_parser.expr_parser(name, [this.func]);
       return named_parser;
     };
-    /* so.... $a should still cause the named parser.... but $( = ) should also
-    be allowed... that would add several more special things... wait... I can
-    ban that and just make it so I will have funcs that take things... yeah,
-    thats fine. So... to match rule I do... string($x)... so, to match rule....
-    I don't even need to match rule! just to make it so attempts at unboxing
-    will fail! oh... wait... ummm... than string("4$a") should fail... hmmm..
-    list($x,list($y))... when I try to get x do I get anything.... no... wait
-    thats fine... I should not get anything there! okay. good. So, I need something
-    that lets me check rule matching now ... also, not that $x will match
-    .... and that rule($x) is shorthand for rule matching... */
 
     this.to_rule = function() {
       return this.to_named_parser('output');
