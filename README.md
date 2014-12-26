@@ -2,9 +2,10 @@
 0.0.2
 A programming language with mutable syntax.
 ______
+
 ## Status
 
-Lark is in very heavy development. This readme will be updated once Lark is even somewhat usable. As of now the very core of the language has been built. This is the part that does parsing and can deal with the mutable syntax. The current task it to deal with adding the basic language executer on top of which components can be added.
+Lark's name will be changing soon as it has been discovered there was already a programming language named Lark. Go figure. Lark is in very heavy development. This readme will be updated once Lark is even somewhat usable. As of now the very core of the language has been built. This is the part that does parsing and can deal with the mutable syntax. The current task it to deal with adding the basic language executer on top of which components can be added.
 
 ## Todo
 - The basic language executer
