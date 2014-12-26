@@ -6,7 +6,7 @@ func -> left "=" right {%function(){
     }
   }() %}
 left -> (charL | wildL):* {% function(d){return "core_parser.concat_parsers(["+d[0].join(",")+",])";} %}
-wildL -> "$" [a-zA-Z]:+ {% function(d){return "scope.to_named('"+d[1]+"')";} %}
+wildL -> "$" [a-zA-Z]:+ {% function(d){return "scope.to_named_parser('"+d[1]+"')";} %}
 charL -> [^$=\\\n'] {% function(d){return "core_parser.lit('"+d[0]+"')";} %}
       | "\\$" {% function(d){return "core_parser.lit('"+"$"+"')";} %}
       | "\\=" {% function(d){return "core_parser.lit('"+"="+"')";} %}

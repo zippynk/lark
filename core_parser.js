@@ -50,6 +50,12 @@
     }
 
   }
+
+  function none(){
+    return {
+      matches: false
+      };
+  }
   /*
   The join_parsers function takes two parser functions and returns a function
   that attempts to parse an input string with one parser followed by the other.
@@ -232,6 +238,7 @@
   // MUST BE A MODULE
   var lark_functions = {
     lit: lit,
+    none: none,
     join_parsers: join_parsers,
     concat_parsers: concat_parsers,
     or_rules: or_rules,
