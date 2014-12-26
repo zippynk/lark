@@ -34,11 +34,7 @@
     if (typeof init_val == "string") {
       /* This takes the string form of a parser, such as $n!=($n-1)! and turns
       it into a parser object. */
-      var parser = new nearley.Parser(grammar.ParserRules,
-                                      grammar.ParserStart,
-                                      "func");
-                                      //this needs to be in a function part...
-      this.func = (parser.feed(init_val).results[0])(this);
+
     } else if (typeof init_val == "function") {
 
       this.func = init_val;
@@ -59,6 +55,15 @@
       return {matches: true, captured_vars:{output:str_to_check}}
     }
   }
+  function str_to_lark_func(string_to_convert){
+    console.log(string_to_convert,'here');
+    var parser = new nearley.Parser(grammar.ParserRules,
+      grammar.ParserStart,
+      "func");
+      //this needs to be in a function part...
+
+      return new lark_func((parser.feed(string_to_convert).results[0])(this));
+  }
   function lark_int(init_val) {
     this.val = parseInt(init_val);
     //I'm gonna do everything else myself...
@@ -75,6 +80,8 @@
   if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
     module.exports = {
       lark_func:lark_func,
+      str_to_lark_func:str_to_lark_func,
+      lark_func_matches:lark_func_matches,
       lark_int:lark_int
     };
   }
