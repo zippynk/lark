@@ -1,7 +1,8 @@
+code -> func ";" .:* {% function(d){return {rule:d[0],code:d[2].join("")};} %}
 func -> left "=" right {%function(){
-  var core_parser=require("./core_parser");
-
+  var core_parser=require("./core_parser.js");
   return function(d){
+  console.log("(function(scope){return core_parser.parts_to_rule("+d[0]+","+d[2]+");})");
     return eval("(function(scope){return core_parser.parts_to_rule("+d[0]+","+d[2]+");})");
     }
   }() %}

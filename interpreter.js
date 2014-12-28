@@ -1,12 +1,6 @@
 var types = require("./types.js");
-/* An interperter has a list of rules and executes strings according to them.
-One of its rules should involve dealing with new rules. */
-function func_string_parser(string_to_parse){
-  try{
-    return types.str_to_lark_func(string_to_parse);
-
-  }
-}
+var nearley = require('nearley');
+var grammar = require('./util_grammar.js');
 
 //basicly.... first execs it with current rules...
 //if that does not match, it should keep working with util_grammar
@@ -20,26 +14,22 @@ pointer-esque. */
 
 function interpreter(code){
   var rules = new types.lark_func(null);
-  var attempt = rules.exec(code);
-  var once = false;
-  if (attempt.matches) {
-    code = attempt.output();
-    once = true;
-  } else {
+  while (true){
+    console.log(code);
     try {
-      //GET PARSINGS HERE AND LEFT OVERS
-      var new_rule_attempt = types.str_to_lark_func(string_to_parse);
-      //so... none throws an error?
-      rules = rules.or(new_rule_attempt);
-      once = true;
+    var parser = new nearley.Parser(grammar.ParserRules,
+      grammar.ParserStart,
+      "code");
+      // I hope the first is the shortest.
+      result=parser.feed(code).results[0];
+      code=result.code;
+      console.log(result)
+      console.log(result.rule);
+      rules.add(new types.lark_func(result.rule(this)));
+    } catch (e) {
+      throw e;
+      return code;
     }
-    catch (e) {
-      console.log(e,"error");
-      if (once) return {
-        output:codes,matches:false
-        }
-    }
-
   }
 }
-types.lark_func()
+console.log(interpreter("0=1;0"));

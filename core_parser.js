@@ -247,6 +247,7 @@
     func_to_rule: func_to_rule,
     parts_to_rule: parts_to_rule
   };
+  console.log('hereyah');
   //!== not needed
   if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
     module.exports = lark_functions;
