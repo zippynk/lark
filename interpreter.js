@@ -1,6 +1,7 @@
 var types = require("./types.js");
 var nearley = require('nearley');
 var grammar = require('./util_grammar.js');
+var core_parser = require("./core_parser.js");
 
 //basicly.... first execs it with current rules...
 //if that does not match, it should keep working with util_grammar
@@ -14,8 +15,10 @@ pointer-esque. */
 
 function interpreter(code){
   var rules = new types.lark_func(null);
+  rules.add(new types.lark_func(core_parser.parts_to_rule(core_parser.expr_parser("int",[core_parser.lit(/[0-9]+/)]),function(i){return "int("+i.int+")";})));
   while (true){
     console.log(code);
+    console.log(rules.exec(code));
     try {
     var parser = new nearley.Parser(grammar.ParserRules,
       grammar.ParserStart,
@@ -32,4 +35,4 @@ function interpreter(code){
     }
   }
 }
-console.log(interpreter("0=1;0"));
+console.log(interpreter("int(0)=1;0"));
