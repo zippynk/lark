@@ -8,11 +8,12 @@ ______
 Lark's name will be changing soon as it has been discovered there was already a programming language named Lark. Go figure. Lark is in very heavy development. This readme will be updated once Lark is even somewhat usable. As of now the very core of the language has been built. This is the part that does parsing and can deal with the mutable syntax. The current task it to deal with adding the basic language executer on top of which components can be added.
 
 ## Todo
-- The basic language executer
-- A type system
+- A better type system
+- Fix the naming scheme which doesn't make any sense (rules vs functions?)
 - A better readme :)
-- Core types such as strings and integers
-- Operators such as integer addition, integer multiplication, string slicing ect.
+- Finish implementing integers
+- Other core types such as strings
+- Implements rules/funcs as types/objects
 
 ## Vision
 The end goal, the vision, of lark is to create a world where lark is the only accepted programming language and is mandatory teaching in all schools.
@@ -32,5 +33,5 @@ Jacob Edelman is the leader and creator of Lark. Pull requests are welcome.
 ## History:
 
 - Version 0.0.0: Pre-Usable, mostly a rough draft of core code.
-- Version 0.0.1 (current): Core code for certain sections is done.
-- Version 0.0.2 (in progress): Core code is finished. It should be possible to write programs.
+- Version 0.0.1: Core code for certain sections is done.
+- Version 0.0.2 (current): Core code is finished. It should be possible to write programs.
