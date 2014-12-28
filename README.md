@@ -32,5 +32,5 @@ Jacob Edelman is the leader and creator of Lark. Pull requests are welcome.
 ## History:
 
 - Version 0.0.0: Pre-Usable, mostly a rough draft of core code.
-- Version 0.0.1 (current): Core code for certain sections is done.
-- Version 0.0.2 (in progress): Core code is finished. It should be possible to write programs.
+- Version 0.0.1: Core code for certain sections is done.
+- Version 0.0.2 (current): Core code is finished. It should be possible to write programs.
