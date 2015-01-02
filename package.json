@@ -1,8 +1,8 @@
 {
-  "name": "lark",
+  "name": "lark-lang",
   "version": "0.0.2",
   "description": "A programming language with mutable syntax.",
-  "main": "lang_base.js",
+  "main": "interpreter.js",
   "scripts": {
     "postinstall":"js ./node_modules/nearley/bin/nearleyc.js util_grammar.ne  -o util_grammar.js",
     "test": "echo \"Error: no test specified\" && exit 1"
