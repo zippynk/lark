@@ -12,27 +12,52 @@ caring about executing amount). I can probaly just make it so with works with
 this. (with some sort of exec_with commands). So, hwo are wilds gonna work? Well
 how does scoping and referncing work in js. Oh yeah, objects are all
 pointer-esque. */
+function int_rule(){
+  return new types.lark_func(
+    core_parser.named_parser(
+      "output",
+      core_parser.lit(/[0-9]+/),
+      function(i){return "int("+i+")";}
+    )
+  );
+}
 
+function add_rule(rules){
+  var parser = new nearley.Parser(grammar.ParserRules,
+    "left");
+  return new types.lark_func(
+    core_parser.parts_to_rule(
+      eval(parser.feed("int($a)+int($b)").results[0]),
+      function(x){
+        return parseInt(x.a.slice(4,-1))+parseInt(x.b.slice(4,-1))+"";
+      }
+    )
+  );
+}
 function interpreter(code){
   var rules = new types.lark_func(null);
-  rules.add(new types.lark_func(core_parser.parts_to_rule(core_parser.expr_parser("int",[core_parser.lit(/[0-9]+/)]),function(i){return "int("+i.int+")";})));
+  rules.add(int_rule(rules));
+  rules.add(add_rule(rules));
   while (true){
-    console.log(code);
-    console.log(rules.exec(code));
-    try {
     var parser = new nearley.Parser(grammar.ParserRules,
-      grammar.ParserStart,
       "code");
       // I hope the first is the shortest.
-      result=parser.feed(code).results[0];
-      code=result.code;
-      console.log(result)
-      console.log(result.rule);
-      rules.add(new types.lark_func(result.rule(this)));
-    } catch (e) {
-      throw e;
-      return code;
-    }
+      results=parser.feed(code).results;
+      if(results.length >= 1) { // ambigous for now
+        var result = results[0];
+        code=result.code;
+        rules.add(new types.lark_func(result.rule(rules)));
+      } else {
+        attempt=rules.exec(code);
+        if (attempt.matches) {
+          code = attempt.captured_vars.output;
+          // Technically I know I don't need to use exec again.
+        } else {
+          break;
+        }
+      }
   }
+
+  return code;
 }
-console.log(interpreter("int(0)=1;0"));
+console.log(interpreter("$a+$b=$a+$b;1+2"));

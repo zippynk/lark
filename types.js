@@ -47,7 +47,6 @@
     this.add_str =   function (str_to_convert){
       return this.add(this.str_to_func(str_to_convert));
     }
-
     if (init_val === null) {
       //This is in case we just want a base rule that matches nothing;
       this.func = core_parser.none;

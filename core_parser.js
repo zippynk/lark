@@ -1,10 +1,8 @@
 (function() {
+
   /* You may be wondering what the difference between a rule and a parser is.
   As of now the rules just always capture a "output" variable. */
-
   var _ = require('underscore');
-  var nearley = require('nearley');
-  var grammar = require('./util_grammar.js');
   /* The lit function takes a string or matchable object and returns a
   parser function that checks for a complete matche of the whole string of its
   input with the string or matchable object. */
@@ -28,7 +26,6 @@
     } else {
       // This assumes it is a regex or other matchable object.
       return function(x) {
-
         var attempt_match = x.match(match_against);
         if (attempt_match === null) {
           return {
@@ -161,7 +158,6 @@
       function at the variable rule. */
       var attempt;
       for (var i in rules) {
-
         /* This is getting the current rule and trying to match str_to_parse
         with that rule. */
         rule = rules[i];
@@ -198,7 +194,6 @@
 
   function expr_parser(var_name, global_rules) {
     return function(str_to_exec) {
-
       var attempt = or_rules(var_name, global_rules)(str_to_exec);
       /* If the string never parses than we return {matches:false}. Otherwise we
       return the last possible matching parse. */
@@ -209,10 +204,9 @@
       while (attempt.matches) {
         // The if statement checks to see if we are just looping.
         // Should this be here?
-        if (old.matches && attempt.captured_vars.output === old.captured_vars.output) break;
+        if (old.matches && attempt.captured_vars[var_name] === old.captured_vars[var_name]) break;
         old = attempt;
-        attempt = or_rules(var_name, global_rules)(attempt.captured_vars.output);
-
+        attempt = or_rules(var_name, global_rules)(attempt.captured_vars[var_name]);
       }
 
       return old;
@@ -247,9 +241,9 @@
     func_to_rule: func_to_rule,
     parts_to_rule: parts_to_rule
   };
-  console.log('hereyah');
+
   //!== not needed
-  if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
+  if (typeof module != 'undefined' && typeof module.exports != 'undefined' ) {
     module.exports = lark_functions;
   }
   /*
