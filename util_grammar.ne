@@ -1,5 +1,5 @@
-code -> func ";" .:* {% function(d){return {rule:d[0],code:d[2].join("")};} %}
-func -> left "=" right {%function(){
+code -> rule ";" .:* {% function(d){return {rule:d[0],code:d[2].join("")};} %}
+rule -> left "=" right {%function(){
   var core_parser = require("./core_parser.js");
   return function(d){
     return eval("(function(rules){return core_parser.parts_to_rule("+d[0]+","+d[2]+");})");

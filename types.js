@@ -41,7 +41,7 @@
       it into a parser object. */
       var parser = new nearley.Parser(grammar.ParserRules,
         grammar.ParserStart,
-        "func");
+        "rule");
       return new lark_func((parser.feed(str_to_convert).results[0])(this));
     }
     this.add_str =   function (str_to_convert){
@@ -64,7 +64,7 @@
     it into a parser object. */
     var parser = new nearley.Parser(grammar.ParserRules,
       grammar.ParserStart,
-      "func");
+      "rule");
     //this needs to be in a function part...
     var none_rule = new lark_func(null);
     return new lark_func((parser.feed(str_to_convert).results[0])(none_rule));
@@ -72,7 +72,7 @@
   function lark_func_matches(str_to_check) {
     var parser = new nearley.Parser(grammar.ParserRules,
                                     grammar.ParserStart,
-                                    "func");
+                                    "rule");
     //this needs to be in a function part...
     var results = parser.feed(init_val).results;
     if (results.length == 0){
