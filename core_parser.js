@@ -158,6 +158,7 @@
       function at the variable rule. */
       var attempt;
       for (var i in rules) {
+
         /* This is getting the current rule and trying to match str_to_parse
         with that rule. */
         rule = rules[i];

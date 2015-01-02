@@ -14,10 +14,10 @@
   how does scoping and referncing work in js. Oh yeah, objects are all
   pointer-esque. */
   function int_rule(){
-    return new types.lark_func(
+    return (
       core_parser.named_parser(
         "output",
-        core_parser.lit(/[0-9]+/),
+        core_parser.lit(/(\-?)[0-9]+/),
         function(i){return "int("+i+")";}
       )
     );
@@ -26,7 +26,7 @@
   function add_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
-    return new types.lark_func(
+    return (
       core_parser.parts_to_rule(
         eval(parser.feed("int($a)+int($b)").results[0]),
         function(x){
@@ -40,7 +40,7 @@
   function subtract_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
-    return new types.lark_func(
+    return (
       core_parser.parts_to_rule(
         eval(parser.feed("int($a)-int($b)").results[0]),
         function(x){
@@ -54,7 +54,7 @@
   function print_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
-      return new types.lark_func(
+      return(
         core_parser.parts_to_rule(
           eval(parser.feed("print(int($a))").results[0]),
           function(x){
@@ -68,7 +68,7 @@
   function string_to_rule(string_to_convert,rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "rule");
-    return new types.lark_func(
+    return (
       (parser.feed(string_to_convert).results[0])(rules)
     );
   }
@@ -78,15 +78,18 @@
 
     rules.add(int_rule(rules));
 
-    rules.add(string_to_rule("$a+$b=int($a+$b)",rules));
     rules.add(add_int_rule(rules));
-
-    rules.add(string_to_rule("$a-$b=int($a-$b)",rules));
     rules.add(subtract_int_rule(rules));
+    rules.add(print_int_rule(rules));
 
+
+    rules.add(string_to_rule("$a+$b=int($a+$b)",rules));
+    rules.add(string_to_rule("$a-$b=int($a-$b)",rules));
     // Print has no type so it won't need something to execute it.
     rules.add(string_to_rule("print($a)=print($a)",rules));
-    rules.add(print_int_rule(rules));
+    // rules.add(string_to_rule("(int($a))=$a",rules));
+
+
 
     while (true){
       var parser = new nearley.Parser(grammar.ParserRules,

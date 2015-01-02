@@ -8,7 +8,8 @@
       return new lark_func(this.to_named_parser(name));
     };
     this.to_named_parser = function(name) {
-      var named_parser = core_parser.expr_parser(name, [this.func]);
+      //oh wait... this.func .... ummm... problem with func being a primitive maybe...
+      var named_parser = core_parser.expr_parser(name, this.funcs);
       return named_parser;
     };
 
@@ -27,14 +28,21 @@
     };
 
     this.or = function(other_lark_func) {
-      var rules = [other_lark_func.to_rule(), this.to_rule()];
-      var new_rule = core_parser.or_rules("output", rules);
-      return new lark_func(new_rule);
+      /* This is a bit ugly. Since this things rule object may be changed
+      to_rule must be run each time. Maybe this should be memoized? */
+
+      return new lark_func(function(str) {
+        var rules = [other_lark_func.to_rule(), this.to_rule()];
+        return core_parser.or_rules("output", rules)(str);
+      });
+
     };
 
     this.add = function(other_lark_func) {
-      var rules = [other_lark_func.to_rule(), this.to_rule()];
-      this.func = core_parser.or_rules("output", rules);
+      this.funcs.push(other_lark_func)
+       // should the other func be a rule?
+      // var rules = [other_lark_func.to_rule(), this.to_rule()];
+      // this.func = core_parser.or_rules("output", rules);
     };
     this.str_to_func = function(str_to_convert){
       /* This takes the string form of a parser, such as $n!=($n-1)! and turns
@@ -49,10 +57,10 @@
     }
     if (init_val === null) {
       //This is in case we just want a base rule that matches nothing;
-      this.func = core_parser.none;
+      this.funcs = [core_parser.none];
     } else if (typeof init_val == "function") {
 
-      this.func = init_val;
+      this.funcs = [init_val];
     } else {
       throw Error("The type " + typeof init_val +
                   " is not a correct type for lark_func.");
