@@ -38,8 +38,8 @@
 
     };
 
-    this.add = function(other_lark_func) {
-      this.funcs.push(other_lark_func)
+    this.add = function(other_func) {
+      this.funcs.push(other_func);//correct
        // should the other func be a rule?
       // var rules = [other_lark_func.to_rule(), this.to_rule()];
       // this.func = core_parser.or_rules("output", rules);

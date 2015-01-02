@@ -113,7 +113,6 @@
 
   /* This is for when you have a parser and want to make it so it captures
   what it parses with a specific name and optionally a postprocessor. */
-  //this allows one to take
   function named_parser(name, rule, postprocessor) {
     return function(str_to_check) {
       var attempt = rule(str_to_check);
@@ -127,6 +126,23 @@
         } else {
           ret.captured_vars[name] = str_to_check;
         }
+        return ret;
+      }
+      return {
+        matches: false
+      };
+    }
+  }
+
+  function func_to_parser(name, rule) {
+    return function(str_to_check) {
+      var attempt = rule(str_to_check);
+      if (attempt!=undefined) {
+        var ret = {
+          matches: true,
+          captured_vars: {}
+        };
+        ret.captured_vars[name] = attempt;
         return ret;
       }
       return {
@@ -195,6 +211,7 @@
 
   function expr_parser(var_name, global_rules) {
     return function(str_to_exec) {
+
       var attempt = or_rules(var_name, global_rules)(str_to_exec);
       /* If the string never parses than we return {matches:false}. Otherwise we
       return the last possible matching parse. */
@@ -239,6 +256,7 @@
     or_rules: or_rules,
     expr_parser: expr_parser,
     named_parser: named_parser,
+    func_to_parser: func_to_parser,
     func_to_rule: func_to_rule,
     parts_to_rule: parts_to_rule
   };

@@ -18,7 +18,16 @@
       core_parser.named_parser(
         "output",
         core_parser.lit(/(\-?)[0-9]+/),
-        function(i){return "int("+i+")";}
+        function(i){return i;}
+      )
+    );
+  }
+  function other_int_rule(){
+    return (
+      core_parser.named_parser(
+        "output",
+        core_parser.lit(/int\((\-?)[0-9]+\)/),
+        function(i){return i;}
       )
     );
   }
@@ -26,37 +35,37 @@
   function add_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
-    return (
-      core_parser.parts_to_rule(
-        eval(parser.feed("int($a)+int($b)").results[0]),
-        function(x){
-          // Slicing removes the "int(" and ")".
-          return (parseInt(x.a.slice(4,-1))+parseInt(x.b.slice(4,-1)))+"";
-        }
-      )
-    );
+      var funcer = eval(parser.feed("$a+$b").results[0])
+    return core_parser.func_to_rule(function(str){
+      var attempt = funcer(str);
+      if (attempt.matches) {
+        var a = attempt.captured_vars.a;
+        var b = attempt.captured_vars.b;
+        if(parseInt(a)!=NaN & parseInt(b)!=NaN) return (parseInt(a)+parseInt(b))+"";
+      }
+    });
   }
-
   function subtract_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
     return (
       core_parser.parts_to_rule(
-        eval(parser.feed("int($a)-int($b)").results[0]),
+        eval(parser.feed("$a-$b").results[0]),
         function(x){
           // Slicing removes the "int(" and ")".
-          return (parseInt(x.a.slice(4,-1))-parseInt(x.b.slice(4,-1)))+"";
+          if(parseInt(x.a)!=NaN & parseInt(x.b)!=NaN) return (parseInt(x.a)-parseInt(x.b))+"";
+          return x.a+"-"+x.b; // should this fail????
         }
       )
     );
   }
 
-  function print_int_rule(rules){
+  function print_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
       return(
         core_parser.parts_to_rule(
-          eval(parser.feed("print(int($a))").results[0]),
+          eval(parser.feed("print($a)").results[0]),
           function(x){
             console.log(x.a);
             return "";
@@ -77,29 +86,31 @@
     var rules = new types.lark_func(null);
 
     rules.add(int_rule(rules));
+    //rules.add(other_int_rule(rules));
 
     rules.add(add_int_rule(rules));
     rules.add(subtract_int_rule(rules));
-    rules.add(print_int_rule(rules));
-
-
-    rules.add(string_to_rule("$a+$b=int($a+$b)",rules));
-    rules.add(string_to_rule("$a-$b=int($a-$b)",rules));
+    rules.add(print_rule(rules));
+    rules.add(string_to_rule("($a)=$a",rules));
+    // rules.add(string_to_rule("$a+$b=$a+$b",rules));
+    // // rules.add(string_to_rule("$a+int($b)=int($a+$b)",rules));
+    // // rules.add(string_to_rule("int($a)+$b=int($a+$b)",rules));
+    // rules.add(string_to_rule("$a-$b=$a-$b",rules));
     // Print has no type so it won't need something to execute it.
-    rules.add(string_to_rule("print($a)=print($a)",rules));
-    // rules.add(string_to_rule("(int($a))=$a",rules));
+
 
 
 
     while (true){
       var parser = new nearley.Parser(grammar.ParserRules,
         "code");
+        console.log(code);
         // I hope the first is the shortest.
         results=parser.feed(code).results;
         if(results.length >= 1) { // ambigous for now
           var result = results[0];
           code=result.code;
-          rules.add(new types.lark_func(result.rule(rules)));
+          rules.add(result.rule(rules));
         } else {
           attempt=rules.exec(code);
           if (attempt.matches) {
