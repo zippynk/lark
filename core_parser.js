@@ -220,6 +220,8 @@
         matches: false
       };
       while (attempt.matches) {
+        if (attempt.captured_vars.output)
+        console.log(attempt);
         // The if statement checks to see if we are just looping.
         // Should this be here?
         if (old.matches && attempt.captured_vars[var_name] === old.captured_vars[var_name]) break;

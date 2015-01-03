@@ -48,17 +48,32 @@
   function subtract_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
-    return (
-      core_parser.parts_to_rule(
-        eval(parser.feed("$a-$b").results[0]),
-        function(x){
-          // Slicing removes the "int(" and ")".
-          if(parseInt(x.a)!=NaN & parseInt(x.b)!=NaN) return (parseInt(x.a)-parseInt(x.b))+"";
-          return x.a+"-"+x.b; // should this fail????
+      var funcer = eval(parser.feed("$a-$b").results[0])
+      return core_parser.func_to_rule(function(str){
+        var attempt = funcer(str);
+        if (attempt.matches) {
+          var a = attempt.captured_vars.a;
+          var b = attempt.captured_vars.b;
+          if(parseInt(a)!=NaN & parseInt(b)!=NaN) return (parseInt(a)-parseInt(b))+"";
         }
-      )
-    );
-  }
+      });
+    }
+    function equal_rule(rules){
+      var parser = new nearley.Parser(grammar.ParserRules,
+        "left");
+        var funcer = eval(parser.feed("$a\\=\\=$b").results[0]);
+        //assumes identical look
+        //for now lets just use ==
+        return core_parser.func_to_rule(function(str){
+          var attempt = funcer(str);
+          if (attempt.matches) {//b=$a*($b-1)+$a
+            var a = attempt.captured_vars.a;
+            var b = attempt.captured_vars.b;
+            if(a==b)return "true";
+            return "false";
+          }
+        });
+      }
 
   function print_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
@@ -82,20 +97,27 @@
     );
   }
 
+  function fix_whitespace(code){
+    return code=code.replace(/(\w)\s+(\w)/g,"$1 $2")
+    .replace(/(\W)\s+(.)/g,"$1$2")
+    .replace(/(.)\s+(\W)/g,"$1$2")
+    .replace(/^\s+/,"")
+    .replace(/\s+$/,"");
+  }
+
   function interpreter(code){
+    code = fix_whitespace(code);
+
     var rules = new types.lark_func(null);
 
     rules.add(int_rule(rules));
-    //rules.add(other_int_rule(rules));
 
     rules.add(add_int_rule(rules));
     rules.add(subtract_int_rule(rules));
     rules.add(print_rule(rules));
-    rules.add(string_to_rule("($a)=$a",rules));
-    // rules.add(string_to_rule("$a+$b=$a+$b",rules));
-    // // rules.add(string_to_rule("$a+int($b)=int($a+$b)",rules));
-    // // rules.add(string_to_rule("int($a)+$b=int($a+$b)",rules));
-    // rules.add(string_to_rule("$a-$b=$a-$b",rules));
+    rules.add(equal_rule(rules));
+
+
     // Print has no type so it won't need something to execute it.
 
 
@@ -104,7 +126,6 @@
     while (true){
       var parser = new nearley.Parser(grammar.ParserRules,
         "code");
-        console.log(code);
         // I hope the first is the shortest.
         results=parser.feed(code).results;
         if(results.length >= 1) { // ambigous for now
