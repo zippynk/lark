@@ -11,9 +11,10 @@ Lark's name will be changing soon as it has been discovered there was already a 
 - A better type system
 - Fix the naming scheme which doesn't make any sense (rules vs functions?)
 - A better readme :)
-- Finish implementing integers
 - Other core types such as strings
 - Implements rules/funcs as types/objects
+- Implement arrays
+- Implement Blocks
 
 ## Vision
 The end goal, the vision, of lark is to create a world where lark is the only accepted programming language and is mandatory teaching in all schools.
