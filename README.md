@@ -1,5 +1,5 @@
 # Lark
-0.0.2
+0.0.3
 A programming language with mutable syntax.
 ______
 
@@ -34,4 +34,5 @@ Jacob Edelman is the leader and creator of Lark. Pull requests are welcome.
 
 - Version 0.0.0: Pre-Usable, mostly a rough draft of core code.
 - Version 0.0.1: Core code for certain sections is done.
-- Version 0.0.2 (current): Core code is finished. It should be possible to write programs.
+- Version 0.0.2: Core code is finished. It should be possible to write programs.
+- Version 0.0.3 (current): Basic programs can be created. Multiplication was created in lark.
