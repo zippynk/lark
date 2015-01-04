@@ -1,4 +1,4 @@
-code -> rule ";" .:* {% function(d){return {rule:d[0],code:d[2].join("")};} %}
+block -> "{" rule ";" .:* "}"{% function(d){return {rule:d[1],code:d[3].join("")};} %}
 rule -> left "=" right {%function(){
   var core_parser = require("./core_parser.js");
   return function(d){

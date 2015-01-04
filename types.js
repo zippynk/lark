@@ -26,16 +26,10 @@
                                             this.to_rule());
       return new lark_func(new_rule);
     };
-
-    this.or = function(other_lark_func) {
-      /* This is a bit ugly. Since this things rule object may be changed
-      to_rule must be run each time. Maybe this should be memoized? */
-
-      return new lark_func(function(str) {
-        var rules = [other_lark_func.to_rule(), this.to_rule()];
-        return core_parser.or_rules("output", rules)(str);
-      });
-
+    this.clone = function(other_func) {
+      var ret = new lark_func(null);
+      ret.funcs = this.funcs;
+      return ret;
     };
 
     this.add = function(other_func) {

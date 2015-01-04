@@ -166,7 +166,6 @@
   function or_rules(var_name, rules) {
     // This is memoized so we don't do useless stuff later.
     return _.memoize(function(str_to_parse) {
-      if(str_to_parse=="print(2+2)")console.log(str_to_parse,var_name);
       /* The rule variable stores the current rule we are looking at in the for
       loop below. */
       var rule;
@@ -174,7 +173,6 @@
       function at the variable rule. */
       var attempt;
       for (var i in rules) {
-
         /* This is getting the current rule and trying to match str_to_parse
         with that rule. */
         rule = rules[i];

@@ -1,6 +1,7 @@
 (function(){
   var types = require("./types.js");
   var nearley = require('nearley');
+  var _ = require('underscore');
   var grammar = require('./util_grammar.js');
   var core_parser = require("./core_parser.js");
 
@@ -82,12 +83,40 @@
         core_parser.parts_to_rule(
           eval(parser.feed("print($a)").results[0]),
           function(x){
-            
+            // I don't like this way of doing things.
+            //no easy way to fix this for now
             console.log(x.a);
             return "";
           }
         )
       );
+    }
+    var parse_block = _.memoize(function(str){
+      var parser = new nearley.Parser(grammar.ParserRules,
+        "block");
+      try {
+        return parser.feed(str).results;
+      } catch(e) {
+        return undefined;
+      }
+    });
+
+    function block_rule(rules){
+        return(
+          (function(str){
+            results=parse_block(str);
+            if(results===undefined) return {matches:false};
+
+            if(results.length >= 1) { // ambigous for now
+              var result = results[0];
+              var new_rules = rules.clone();
+              new_rules.add(result.rule(new_rules));
+              return new_rules.exec("{"+result.code+"}");
+            } else {
+              return {matches:false};
+            }
+          })
+        );
     }
 
   function string_to_rule(string_to_convert,rules){
@@ -112,13 +141,15 @@
     var rules = new types.lark_func(null);
 
     rules.add(int_rule(rules));
-
     rules.add(add_int_rule(rules));
+    rules.add(block_rule(rules));
+
     rules.add(subtract_int_rule(rules));
     rules.add(print_rule(rules));
     rules.add(equal_rule(rules));
-
-
+    rules.add(string_to_rule("{$a}=$a",rules)); //this aint good,
+    rules.exec("{d($a)=$a+2;print(d(3))}");
+    return ;
     // Print has no type so it won't need something to execute it.
 
 
