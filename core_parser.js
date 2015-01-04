@@ -166,7 +166,7 @@
   function or_rules(var_name, rules) {
     // This is memoized so we don't do useless stuff later.
     return _.memoize(function(str_to_parse) {
-
+      if(str_to_parse=="print(2+2)")console.log(str_to_parse,var_name);
       /* The rule variable stores the current rule we are looking at in the for
       loop below. */
       var rule;
@@ -220,8 +220,6 @@
         matches: false
       };
       while (attempt.matches) {
-        if (attempt.captured_vars.output)
-        console.log(attempt);
         // The if statement checks to see if we are just looping.
         // Should this be here?
         if (old.matches && attempt.captured_vars[var_name] === old.captured_vars[var_name]) break;

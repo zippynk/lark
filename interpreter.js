@@ -74,7 +74,7 @@
           }
         });
       }
-
+  // The memoizing of this that may occur could cause problems.
   function print_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
@@ -82,6 +82,7 @@
         core_parser.parts_to_rule(
           eval(parser.feed("print($a)").results[0]),
           function(x){
+            
             console.log(x.a);
             return "";
           }
@@ -122,12 +123,16 @@
 
 
 
-
+    var results;
     while (true){
       var parser = new nearley.Parser(grammar.ParserRules,
         "code");
         // I hope the first is the shortest.
-        results=parser.feed(code).results;
+        try {
+          results=parser.feed(code).results;
+        } catch (e){
+          results=[];
+        }
         if(results.length >= 1) { // ambigous for now
           var result = results[0];
           code=result.code;
