@@ -9,13 +9,17 @@
     };
     this.to_named_parser = function(name) {
       //oh wait... this.func .... ummm... problem with func being a primitive maybe...
-      var named_parser = core_parser.expr_parser(name, this.funcs);
-      return named_parser;
+      return core_parser.expr_parser(name, this.funcs);
     };
+    // This doesn't repeatedly execute its input.
+    this.check = function(name) {
+      return core_parser.check_rules(name, this.funcs);
+    }
 
     this.to_rule = function() {
       return this.to_named_parser('output');
     };
+
 
     this.exec = function(input_string) {
       return this.to_rule()(input_string);

@@ -11,14 +11,14 @@
   /* For the interpreter, if it finds a rule, it should exec itself on the text
   it found along with that rule added. run on whatever its internals are (not
   caring about executing amount). I can probaly just make it so with works with
-  this. (with some sort of exec_with commands). So, hwo are wilds gonna work? Well
+  this. (with some sort of exec_with commands). So, how are wilds gonna work? Well
   how does scoping and referncing work in js. Oh yeah, objects are all
   pointer-esque. */
   function int_rule(){
     return (
       core_parser.named_parser(
         "output",
-        core_parser.lit(/(\-?)[0-9]+/),
+        core_parser.regex_parser(/(\-?)[0-9]+/),
         function(i){return i;}
       )
     );
@@ -27,54 +27,106 @@
     return (
       core_parser.named_parser(
         "output",
-        core_parser.lit(/int\((\-?)[0-9]+\)/),
+        core_parser.regex_parser(/int\((\-?)[0-9]+\)/),
         function(i){return i;}
       )
     );
   }
-
   function add_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
       var funcer = eval(parser.feed("$a+$b").results[0])
-    return core_parser.func_to_rule(function(str){
-      var attempt = funcer(str);
-      if (attempt.matches) {
-        var a = attempt.captured_vars.a;
-        var b = attempt.captured_vars.b;
-        if(parseInt(a)!=NaN & parseInt(b)!=NaN) return (parseInt(a)+parseInt(b))+"";
+    return core_parser.parts_to_rule(
+      funcer,
+      function(captured_vars){
+        var a = parseInt(captured_vars.a());
+        if(a==NaN)throw "ERROR: Cannot add because "+a+" is not an int.";
+        var b = parseInt(captured_vars.b());
+        if(b==NaN)throw "ERROR: Cannot add because "+b+" is not an int.";
+        return (parseInt(a)+parseInt(b)).toString();
       }
-    });
+    );
   }
   function subtract_int_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
       "left");
       var funcer = eval(parser.feed("$a-$b").results[0])
-      return core_parser.func_to_rule(function(str){
-        var attempt = funcer(str);
-        if (attempt.matches) {
-          var a = attempt.captured_vars.a;
-          var b = attempt.captured_vars.b;
-          if(parseInt(a)!=NaN & parseInt(b)!=NaN) return (parseInt(a)-parseInt(b))+"";
+      return core_parser.parts_to_rule(
+        funcer,
+        function(captured_vars){
+          var a = parseInt(captured_vars.a());
+          if(a==NaN)throw "ERROR: Cannot subtract because "+a+" is not an int.";
+          var b = parseInt(captured_vars.b());
+          if(b==NaN)throw "ERROR: Cannot subtract because "+b+" is not an int.";
+          return (parseInt(a)-parseInt(b)).toString();
         }
-      });
+      );
+  }
+  function if_rule(rules){
+    var parser = new nearley.Parser(grammar.ParserRules,
+      "left");
+      var funcer = eval(parser.feed("if $condition then $a else $b").results[0])
+      return core_parser.parts_to_rule(
+        funcer,
+        function(captured_vars){
+          var condition = captured_vars.condition();
+          if (condition == "true") {
+            return captured_vars.a();
+          } else if (condition == "false") {
+            return captured_vars.b();
+          } else{
+            throw "ERROR: Cannot execute if because "+condition+" is not a bool.";
+          }
+        }
+      );
     }
-    function equal_rule(rules){
+  function equal_rule(rules){
+    var parser = new nearley.Parser(grammar.ParserRules,
+      "left");
+      var funcer = eval(parser.feed("$a\\=\\=$b").results[0])
+      return core_parser.parts_to_rule(
+        funcer,
+        function(captured_vars){
+          var a = captured_vars.a();
+          var b = captured_vars.b();
+          if(a==b) return "true";
+          return "false";
+        }
+      );
+    }
+    function less_than_rule(rules){
       var parser = new nearley.Parser(grammar.ParserRules,
         "left");
-        var funcer = eval(parser.feed("$a\\=\\=$b").results[0]);
-        //assumes identical look
-        //for now lets just use ==
-        return core_parser.func_to_rule(function(str){
-          var attempt = funcer(str);
-          if (attempt.matches) {//b=$a*($b-1)+$a
-            var a = attempt.captured_vars.a;
-            var b = attempt.captured_vars.b;
-            if(a==b)return "true";
+        var funcer = eval(parser.feed("$a<$b").results[0])
+        return core_parser.parts_to_rule(
+          funcer,
+          function(captured_vars){
+            var a = parseInt(captured_vars.a());
+            if(a==NaN)throw "ERROR: Cannot do less than because "+a+" is not an int.";
+            var b = parseInt(captured_vars.b());
+            if(b==NaN)throw "ERROR: Cannot do less than because "+b+" is not an int.";
+            if(a<b) return "true";
             return "false";
           }
-        });
+        );
       }
+      function more_than_rule(rules){
+        var parser = new nearley.Parser(grammar.ParserRules,
+          "left");
+          var funcer = eval(parser.feed("$a>$b").results[0])
+          return core_parser.parts_to_rule(
+            funcer,
+            function(captured_vars){
+              var a = parseInt(captured_vars.a());
+              if(a==NaN)throw "ERROR: Cannot do more than because "+a+" is not an int.";
+              var b = parseInt(captured_vars.b());
+              if(b==NaN)throw "ERROR: Cannot do more than because "+b+" is not an int.";
+              if(a>b) return "true";
+              return "false";
+            }
+          );
+        }
+
   // The memoizing of this that may occur could cause problems.
   function print_rule(rules){
     var parser = new nearley.Parser(grammar.ParserRules,
@@ -85,7 +137,7 @@
           function(x){
             // I don't like this way of doing things.
             //no easy way to fix this for now
-            console.log(x.a);
+            console.log(x.a());
             return "";
           }
         )
@@ -101,17 +153,33 @@
       }
     });
 
+    /* This shouldn't use recursion really. It should just be updating an
+    instance of an interperter I guess. */
     function block_rule(rules){
         return(
           (function(str){
+
+            if(str[0]!="{" || str.slice(-1)!="}"){
+              return {matches:false};
+            }
             results=parse_block(str);
             if(results===undefined) return {matches:false};
-
             if(results.length >= 1) { // ambigous for now
               var result = results[0];
               var new_rules = rules.clone();
               new_rules.add(result.rule(new_rules));
-              return new_rules.exec("{"+result.code+"}");
+
+              //var ret = new_rules.exec("{"+result.code+"}");
+              //return ret;
+              return {matches:true,captured_vars:{
+                output:function(){
+                  var ret1 = new_rules.exec("{"+result.code+"}");
+                  var ret= ret1.captured_vars.output()
+
+                  return ret;
+                  }
+                  }
+                };
             } else {
               return {matches:false};
             }
@@ -127,59 +195,28 @@
     );
   }
 
-  function fix_whitespace(code){
-    return code=code.replace(/(\w)\s+(\w)/g,"$1 $2")
-    .replace(/(\W)\s+(.)/g,"$1$2")
-    .replace(/(.)\s+(\W)/g,"$1$2")
-    .replace(/^\s+/,"")
-    .replace(/\s+$/,"");
-  }
-
   function interpreter(code){
-    code = fix_whitespace(code);
-
+    code = "{" + code + "}"
     var rules = new types.lark_func(null);
-
+    rules.add(block_rule(rules));
+    rules.add(string_to_rule("{$a}=$a",rules)); //this aint good
+    rules.add(string_to_rule("($a)=$a",rules)); //this aint good
+    //$(a)*$(b)=if $b==0 than 0 else ($a*($b-1)+$a);
+    rules.add(if_rule(rules));
     rules.add(int_rule(rules));
     rules.add(add_int_rule(rules));
-    rules.add(block_rule(rules));
-
     rules.add(subtract_int_rule(rules));
-    rules.add(print_rule(rules));
+    rules.add(print_rule(rules)); // Needs work
     rules.add(equal_rule(rules));
-    rules.add(string_to_rule("{$a}=$a",rules)); //this aint good,
-    rules.exec("{d($a)=$a+2;print(d(3))}");
-    return ;
-    // Print has no type so it won't need something to execute it.
+    rules.add(less_than_rule(rules));
+    rules.add(more_than_rule(rules));
 
-
-
-    var results;
-    while (true){
-      var parser = new nearley.Parser(grammar.ParserRules,
-        "code");
-        // I hope the first is the shortest.
-        try {
-          results=parser.feed(code).results;
-        } catch (e){
-          results=[];
-        }
-        if(results.length >= 1) { // ambigous for now
-          var result = results[0];
-          code=result.code;
-          rules.add(result.rule(rules));
-        } else {
-          attempt=rules.exec(code);
-          if (attempt.matches) {
-            code = attempt.captured_vars.output;
-            // Technically I know I don't need to use exec again.
-          } else {
-            break;
-          }
-        }
+    var attempt = rules.exec(code);
+    if (attempt.matches) {
+      return attempt.captured_vars.output();
+    } else {
+      return "ERROR";
     }
-
-    return code;
   }
   if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
     module.exports = {

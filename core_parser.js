@@ -10,48 +10,91 @@
     /* No memoization here because I think this is fast enough without it. A
     possible change in the future may be adding memoization here or making it
     occur when the matchable is sufficiently large. */
-    if (typeof match_against == 'string') {
-      return function(x) {
-        if (x === match_against) {
-          return {
-            captured_vars: {},
-            matches: true
-          };
-        } else {
-          return {
-            matches: false
-          };
-        }
-      };
-    } else {
-      // This assumes it is a regex or other matchable object.
-      return function(x) {
-        var attempt_match = x.match(match_against);
-        if (attempt_match === null) {
-          return {
-            matches: false
-          };
-        }
-        // This is to make sure all of x is matched.
-        else if (attempt_match[0] === x) {
-          return {
-            captured_vars: {},
-            matches: true
-          };
-        } else {
-          return {
-            matches: false
-          };
-        }
-      };
-    }
+    var ret = function(x) {
+      if (x === match_against) {
+        return {
+          captured_vars: {},
+          matches: true
+        };
+      } else {
+        return {
+          matches: false
+        };
+      }
+    };
+    ret.is_lit = true;
+    ret.str=match_against;
+    return ret;
 
   }
+  function regex_parser(match_against,max_match) {
+    /* No memoization here because I think this is fast enough without it. A
+    possible change in the future may be adding memoization here or making it
+    occur when the matchable is sufficiently large. */
+
+      // This assumes it is a regex or other matchable object.
+    var ret = function(x) {
+      var attempt_match = x.match(match_against);
+      if (attempt_match === null) {
+        return {
+          matches: false
+        };
+      }
+      // This is to make sure all of x is matched.
+      else if (attempt_match[0] === x) {
+        return {
+          captured_vars: {},
+          matches: true
+        };
+      } else {
+        return {
+          matches: false
+        };
+      }
+    };
+    if(max_match === true){
+      ret.is_regex = true;
+      ret.regex = match_against;
+    }
+    return ret;
+
+  }
+
 
   function none(){
     return {
       matches: false
       };
+  }
+  function consume_start_str(str, lit_parser) {
+    var lit = lit_parser.str;
+    if (str.indexOf(lit,0) == 0) {
+      return str.slice(lit.length);
+    }
+    return null;
+  }
+  function consume_end_str(str, lit_parser) {
+    var lit = lit_parser.str;
+    if (str.lastIndexOf(lit) == str.length-lit.length) {
+      return str.slice(0,str.length-lit.length);
+    }
+    return null;
+  }
+  function consume_start_regex(str,reg_parser){
+    var reg = reg_parser.regex;
+    var attempt = str.match(reg)
+    if (attempt && attempt.index == 0) {
+      return str.slice(attempt[0].length);
+    }
+    return null;
+  }
+  function consume_end_regex(str,reg_parser){
+    var reg = new RegExp(reg_parser.regex.source+"$");
+    var attempt = str.match(reg)
+    if (attempt) {
+      return str.slice(0,-(attempt[0].length));
+    }
+    return null;
   }
   /*
   The join_parsers function takes two parser functions and returns a function
@@ -61,6 +104,38 @@
   */
   function join_parsers(left_parser, right_parser) {
     // This is memoized so we don't do useless stuff later.
+    if (left_parser.is_lit) {
+      if (right_parser.is_lit) {
+        return lit(left_parser.str+right_parser.str);
+      }
+      return function(str_to_check) {
+        var test = consume_start_str(str_to_check,left_parser);
+        if(test!==null) return right_parser(test);
+        else {
+          return {matches: false};}
+      }
+    }
+    if (right_parser.is_lit) {
+      return function(str_to_check) {
+        var test = consume_end_str(str_to_check,right_parser);
+        if(test!==null) return left_parser(test);
+        else {return {matches: false};}
+        }
+    }
+    if (left_parser.is_regex) {
+      return function(str_to_check) {
+        var test = consume_start_regex(str_to_check,left_parser);
+        if(test!==null) return right_parser(test);
+        else {return {matches: false};}
+        }
+      }
+    if (right_parser.is_regex) {
+      return function(str_to_check) {
+        var test = consume_end_regex(str_to_check,right_parser);
+        if(test!==null) return left_parser(test);
+        else {return {matches: false};}
+        }
+      }
     return _.memoize(function(str_to_check) {
       /* The attempt variables store our attempts at parsing each half of our
       string which we will split at differing points. */
@@ -106,6 +181,15 @@
     }
     /* Now we split them in half and recurse on each half, combining those two
     halves with join_parsers. */
+    for (var i = parsers.length-2; i >= 0 ; i--){
+      var parser = parsers[i];
+
+      if (parser.is_lit || parser.is_regex) {
+        return join_parsers(concat_parsers(parsers.slice(0,i+1)),
+                            concat_parsers(parsers.slice(i+1))
+                            );
+      }
+    }
     var left_half = concat_parsers(parsers.slice(0, parsers.length / 2));
     var right_half = concat_parsers(parsers.slice(parsers.length / 2));
     return join_parsers(left_half, right_half);
@@ -117,45 +201,63 @@
     return function(str_to_check) {
       var attempt = rule(str_to_check);
       if (attempt.matches) {
-        var ret = {
+        captured_vars = {};
+        captured_vars[name] = _.memoize(function(){
+          if (postprocessor != undefined) {
+            return postprocessor(str_to_check);
+          } else {
+            return str_to_check;
+          }
+        });
+        return {
           matches: true,
-          captured_vars: {}
+          captured_vars: captured_vars
         };
-        if (postprocessor != undefined) {
-          ret.captured_vars[name] = postprocessor(str_to_check);
-        } else {
-          ret.captured_vars[name] = str_to_check;
+      }
+      return {
+        matches: false
+      };
+    }
+  }
+
+
+  /* This or_rules function takes a set of rules and a name and returns a
+  function that takes a string and returns {matches:false} if none of the rules
+  match the input string and otherwise returns an object where matching is true
+  and a captured_vars where var_name maps to the input string.
+  */
+  function check_rules(var_name, rules) {
+    // This is memoized so we don't do useless stuff later.
+    return _.memoize(function(str_to_parse) {
+      /* The rule variable stores the current rule we are looking at in the for
+      loop below. */
+      var rule;
+      /* The attempt variable store our attempts at parsing the string with the
+      function at the variable rule. */
+      var attempt;
+      for (var i in rules) {
+        /* This is getting the current rule and trying to match str_to_parse
+        with that rule. */
+        rule = rules[i];
+        attempt = rule(str_to_parse);
+        /* If the attempt does match we run the captured_vars of that attempt
+        through the rules postprocessor. */
+
+        if (attempt.matches) {
+          var captured_vars = {};
+          captured_vars[var_name]=function(){return str_to_parse;};
+          return {
+            captured_vars: captured_vars,
+            matches: true
+          };
         }
-        return ret;
       }
+      /* If the program gets here it means no parsings have been found so it
+      just returns {matches:false}. */
       return {
         matches: false
       };
-    }
-  }
-
-  function func_to_parser(name, rule) {
-    return function(str_to_check) {
-      var attempt = rule(str_to_check);
-      if (attempt!=undefined) {
-        var ret = {
-          matches: true,
-          captured_vars: {}
-        };
-        ret.captured_vars[name] = attempt;
-        return ret;
-      }
-      return {
-        matches: false
-      };
-    }
-  }
-
-
-
-  /* For making functions into rules. */
-  function func_to_rule(func) {
-    return func_to_parser('output', func);
+    });
   }
 
   /* This or_rules function takes a set of rules and a name and returns a
@@ -172,6 +274,7 @@
       /* The attempt variable store our attempts at parsing the string with the
       function at the variable rule. */
       var attempt;
+
       for (var i in rules) {
         /* This is getting the current rule and trying to match str_to_parse
         with that rule. */
@@ -181,14 +284,12 @@
         through the rules postprocessor. */
         if (attempt.matches) {
           var captured_vars = {};
-          // More than 80 characters here which is annoying
-          captured_vars[var_name] = attempt.captured_vars.output;//output of a rule
+          captured_vars[var_name] = attempt.captured_vars.output;
           return {
             captured_vars: captured_vars,
             matches: true
           };
         }
-
       }
       /* If the program gets here it means no parsings have been found so it
       just returns {matches:false}. */
@@ -208,7 +309,7 @@
   given rules and captures that output with var_name. */
 
   function expr_parser(var_name, global_rules) {
-    return function(str_to_exec) {
+    return _.memoize(function(str_to_exec) {
 
       var attempt = or_rules(var_name, global_rules)(str_to_exec);
       /* If the string never parses than we return {matches:false}. Otherwise we
@@ -217,45 +318,57 @@
       var old = {
         matches: false
       };
-      while (attempt.matches) {
-        // The if statement checks to see if we are just looping.
-        // Should this be here?
-        if (old.matches && attempt.captured_vars[var_name] === old.captured_vars[var_name]) break;
-        old = attempt;
-        attempt = or_rules(var_name, global_rules)(attempt.captured_vars[var_name]);
-      }
+      if(attempt.matches){
+        var captured_vars = {};
+        captured_vars[var_name]=function(){
+          while (attempt.matches) {
+            // The if statement checks to see if we are just looping.
+            // Should this be here?
+            attempt_caught=attempt.captured_vars[var_name]();
 
-      return old;
-    }
+            if (old.matches && attempt_caught == old_caught) break;
+            old = attempt;
+            old_caught=attempt_caught;
+            attempt = or_rules(var_name, global_rules)(attempt_caught);
+          }
+          //post proccessing twice???
+          return old_caught;
+        };
+        return {
+          matches: true,
+          captured_vars: captured_vars
+        }
+      } else {
+        return {matches: false};
+      }
+    });
   }
 
   function parts_to_rule(matcher, postprocessor) {
-    return function(str_to_check) {
+    return _.memoize(function(str_to_check) {
       var attempt = matcher(str_to_check);
       if (attempt.matches) {
         return {matches: true,
-          captured_vars: {
-            output: postprocessor(attempt.captured_vars)
-          }
+          captured_vars:{output: function(){return postprocessor(attempt.captured_vars);}}
         };
       }
       return {
         matches: false
       };
-    }
+    });
   }
 
   // MUST BE A MODULE
   var lark_functions = {
     lit: lit,
+    regex_parser: regex_parser,
     none: none,
     join_parsers: join_parsers,
     concat_parsers: concat_parsers,
     or_rules: or_rules,
     expr_parser: expr_parser,
     named_parser: named_parser,
-    func_to_parser: func_to_parser,
-    func_to_rule: func_to_rule,
+    check_rules: check_rules,
     parts_to_rule: parts_to_rule
   };
 
