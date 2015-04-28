@@ -1,8 +1,10 @@
 # Lark
-0.1.0
+0.3.0
 A programming language with mutable syntax.
 ______
+0.3.0: The actually working update!
 
+Everything here is out of date. Will be fixed soon.
 ## Use
 Lark is used in the following manner:
 `./lark.py [space seperated file names to execute]`

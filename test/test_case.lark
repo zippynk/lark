@@ -1,8 +1,0 @@
-fib({x})=fib({x}-1)+fib({x}-2)
-fib(1)=1
-fib(2)=1
-print fib(7)
-fib_two_main({a},{b},{c})=fib_two_main({a}-1,{b}+{c},{b})
-fib_two_main(0,{a},{b})={b}
-fib_two({a})=fib_two_main({a}-1,1,1)
-print fib_two(7)
