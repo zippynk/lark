@@ -7,7 +7,7 @@ ______
 Everything here is out of date. Will be fixed soon.
 ## Use
 Lark is used in the following manner:
-`./lark.py [space seperated file names to execute]`
+`./lark [space seperated file names to execute]`
 Files will be executed sequentially in the same enviroment.
 More info on use will be added shortly.
 
