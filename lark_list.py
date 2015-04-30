@@ -4,13 +4,13 @@ from lexer import to_rules, lex
 import string
 
 def list_pattern_func(x):
-    if isinstance(x,lit) and x.val == "[]": # shouldn't happen..
+    if isinstance(x,lit) and x.val == "()": # shouldn't happen..
         return lex("nil")
     elif isinstance(x,seq) and len(x)>=2 and \
         isinstance(x[0], lit) and isinstance(x[-1], lit) and \
-        x[0].val == "[" and x[-1].val == "]":
+        x[0].val == "(" and x[-1].val == ")":
 
-        if not all(i.val == "," for i in x[2:-1:2]):
+        if not all(isinstance(i,lit) and i.val == "," for i in x[2:-1:2]):
             return Fail
         items = x[1:-1:2]
         items = items[::-1]

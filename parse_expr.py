@@ -1,8 +1,14 @@
 import terms
 from lark_utils import Fail
 def parse_expr(x,exprs):
-    #This bit isn't great
-    global expr #BAD
+    #(problem with int_wild?)
+    #Good way to do it (with memoizing (exprs to tuple)):
+    # split in halves,
+    # for each rule, split the rule in half and try it on each part?
+
+
+    # if isinstance(x,terms.wild):
+    #     return x
     if len(x) == 1:
         if isinstance(x[0],terms.expr):
             return x[0]
@@ -25,6 +31,7 @@ def parse_expr(x,exprs):
 
                     if to_add not in done:
                         done.append(to_add)
+                        # really it should then postpone further exec uni
                         for i in range(len(exprs)):
                             strings.append((place+(i,),to_add))
     return Fail

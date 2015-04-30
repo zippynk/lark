@@ -1,14 +1,24 @@
-f($x)=f($x-1)+f($x-2)
-f(1)=1
-f(2)=1
-
+fib($x)=fib($x-1)+fib($x-2)
+fib(1)=1
+fib(2)=1
+($x)=$x
 nil+cons($x, $y)=cons($x, $y)
 nil+nil = nil
 cons($x, $y)+$z= cons($x, $y+$z)
-
+True = True
+False = False
+#$X = even the most needed things are here, true and false are needed for bools
 if True $x else $y = $x
 if False $x else $y = $y
 if $z $x else $y = if $z $x else $y
-f(10)
-if True 1 else 3
-[1,2]+[3,4]
+Error=Error
+nil[$x]=Error
+$a[$x] = $a[$x]
+len(nil)=0
+len(cons($a,$b))=1+len($b)
+len($a)=len($a)
+cons($a,$b)[0]=$a
+cons($a,$b)[$x]=if $x>0 $b[$x-1] else cons($a,$b)[$x+len(cons($a,$b))]
+
+if 2>1 fib(10) else fib(100)
+(1,2,3)[0]

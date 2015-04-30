@@ -1,5 +1,7 @@
 from lark_utils import Fail,dict_union
 class lit:
+    normal = True
+    lazy = True #things don't compile down to lits
     def __init__(self, val):
         self.val = val
 
@@ -14,37 +16,46 @@ class lit:
 
     def __repr__(self):
         return self.val
+    def lazy_exe(self,exprs):
+        return self
     def exe(self,exprs):
         return self
 
 class expr:
+    lazy = False
     normal = False
 
             # lazy exec sets everything on lazy mode so when
     def exe_parts(self,exprs):
         return self
-    def lazy_exe(self, x, exprs):
+    def lazy_parts_exe(self, x, exprs):
         return x
-    def exe_normal(self, exprs):
+
+    def lazy_exe(self, exprs): # should memoize after normal
+    # so... other exe.. lazy
+        if self.normal:
+            return self
         current = self
         for input_form, output_form in exprs:
-            current = input_form.lazy_exe(current, exprs)
+            current = input_form.lazy_parts_exe(current, exprs)
+            # should be wild?
             attempt = input_form.match(current)
+
             if attempt != Fail:
                 attempt = output_form.sub(attempt)
                 if attempt == self:
+                    attempt.normal = True
                     return attempt
                 else:
-                    return attempt.exe(exprs)
+                    ret=attempt.lazy_exe(exprs)
+                    ret.normal = True
+                    return ret
+        # what if I just assume its a normal form then??? that should work... yeah?
+
         assert("I should not be here" == False) # bad style?
-    def exe(self, exprs): # should memoize after normal
-        if self.normal:
-            return self
-        # its the exe parts... ideally that would load the parts with something and someone attempting to matched would attempt it
-        # so... lazy exe parts loads with exprs that will be activated during seq
-        ret = self.exe_normal(exprs) #removed .exe_parts(exprs)
-        ret.normal = True
-        return ret
+    def exe(self, exprs):
+        return self.lazy_exe(exprs)
+
 
     def match(self, x):
         return Fail
@@ -52,6 +63,8 @@ class expr:
         return self
 
 class wild(expr):
+    normal = True
+    lazy = True
     def __init__(self, name):
         self.name = name
 
@@ -67,26 +80,31 @@ class wild(expr):
         if self.name in matched_dict:
             return matched_dict[self.name]
         return self
-    def exe(self, exprs): # is this okay?
-        return self
+
     def __repr__(self):
         return self.name
 
 class seq(tuple, expr):
     def exe_parts(self, exprs):
         return seq([i.exe(exprs) for i in self])
-    def lazy_exe(self, x, exprs): # I think this works?
+    def lazy_parts_exe(self, x, exprs): # I think this works?
         if isinstance(x, seq) and len(x) == len(self): # this should report back
             ret = ()
             for my_term, input_term in zip(self, x):
-                if True or (not isinstance(my_term, wild)) or (my_term.match(input_term) == Fail): # does not work, need a way to cause it to finalize
-                    ret+=(input_term.exe(exprs),)
+
+                if  not my_term.lazy: 
+                    ret+=(input_term.lazy_exe(exprs),)
                 else:
                     ret+=(input_term,)
 
             return seq(ret)
         else:
             return x
+    def exe(self, exprs):
+        ret = self.lazy_exe(exprs).exe_parts(exprs)
+        ret.normal = True
+        return ret
+
     def match(self, x):
         if isinstance(x, seq) and len(self) == len(x):
             matched_dicts = tuple(match_term.match(term) for match_term, term in zip(self, x))
@@ -103,7 +121,7 @@ class seq(tuple, expr):
         return seq(i.sub(matched_dict) for i in self)
 
 class builtin_func(wild):
-
+    lazy = False
     def __init__(self, func):
         self.func = func
 
@@ -111,18 +129,22 @@ class builtin_func(wild):
         return self.func(matched_dict)
 
 class pattern_wild(wild):
+    lazy = False
     def __init__(self, name, pattern):
         self.pattern = pattern
         self.name = name
 
     def match(self, x):
+        # ummmm...
+
+
         # if isinstance(x,lit) or (isinstance(x, seq) and all(isinstance(i, lit) for i in x)):
         #     if isinstance(x,lit):
         #         str_val = x.val
         #     else:
         #         str_val = "".join(str(i.val) for i in x)
         attempt = self.pattern(x)
-    #    print attempt, str_val
+
         if attempt != Fail: # Fail
             ret = {}
             ret[self.name] = attempt

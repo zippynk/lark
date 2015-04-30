@@ -15,7 +15,7 @@ def order_rules(rules):
     ret = []
     while rules:
         current= rules.pop()
-        if not any(current[0].match(i[0]) != Fail for i in rules):
+        if not any((current[0].match(i[0]) != Fail and i[0].match(current[0]) == Fail) for i in rules):
             ret.append(current)
         else:
             rules = [current] + rules

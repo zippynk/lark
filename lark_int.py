@@ -1,8 +1,9 @@
 from lark_utils import Fail
 from terms import builtin_func, pattern_wild, expr, wild, seq, lit
-from lexer import to_rules
+from lexer import to_rules, lex
 import string
 class lark_int(int, expr):
+    normal = True
     def match(self, x):
         if isinstance(x, lark_int) and self == x:
             return {}
@@ -13,10 +14,9 @@ class lark_int(int, expr):
         # super?
         return repr(int(self))
 
-    def exe(self,exprs):
-        return self
 
 class int_wild(wild): # just matches ints (subs for any...)
+    lazy = False
     def match(self, x):
         if isinstance(x, lark_int) or isinstance(x, int_wild): # should include int_wild
             ret = {}
@@ -67,12 +67,42 @@ class subtraction_func(builtin_func):
         self.func = lambda matched_dict: lark_int(matched_dict[self.x]-matched_dict[self.y])
     def __repr__(self):
         return self.x.__repr__()+"-"+self.y.__repr__()
+lark_true = lex("True")
+lark_false = lex("False")
+class less_than_func(builtin_func):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.func = lambda matched_dict: (matched_dict[self.x]<matched_dict[self.y] and lark_true ) or lark_false
+    def __repr__(self):
+        return self.x.__repr__()+"<"+self.y.__repr__()
+
+class more_than_func(builtin_func):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.func = lambda matched_dict: (matched_dict[self.x]>matched_dict[self.y] and lark_true ) or lark_false
+    def __repr__(self):
+        return self.x.__repr__()+">"+self.y.__repr__()
+
+class equal_func(builtin_func): # WILL NOT WORK
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.func = lambda matched_dict: (matched_dict[self.x]==matched_dict[self.y] and lark_true ) or lark_false
+    def __repr__(self):
+        return self.x.__repr__()+"=="+self.y.__repr__()
 
 int_cast_rule = (seq([int_pattern("x")]), seq([int_pattern("x")]))
+# int_cast_rule2 = (int_pattern("x"), int_pattern("x"))
 int_addition_rule = (seq([int_wild("x"), lit("+"), int_wild("y")]), seq([addition_func("x", "y")]))
 int_subtraction_rule = (seq([int_wild("x"), lit("-"), int_wild("y")]), seq([subtraction_func("x", "y")]))
-
-base_int_rules = [int_cast_rule, int_addition_rule, int_subtraction_rule]
+int_less_than_rule = (seq([int_wild("x"), lit("<"), int_wild("y")]), seq([less_than_func("x", "y")]))
+int_more_than_rule = (seq([int_wild("x"), lit(">"), int_wild("y")]), seq([more_than_func("x", "y")]))
+base_int_rules = [int_cast_rule, int_addition_rule, int_subtraction_rule,
+    int_less_than_rule, int_more_than_rule]
 gen_int_rules = to_rules("""$x+$y=$x+$y
-$x-$y=$x-$y""")
+$x<$y=$x<$y
+$x>$y=$x>$y
+$x-$y=$x-$y""") # equal rule needed
 int_rules = base_int_rules + gen_int_rules
